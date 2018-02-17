@@ -9,6 +9,16 @@ import numpy as np
 from Bio.Seq import complement
 from Bio.Seq import reverse_complement
 
+__all__ = [
+    'Snv',
+    'Spectrum',
+    'dna_kmers',
+    'plot_spectrum',
+    'purines',
+    'pyrimidines',
+    'signature_colors']
+
+
 signature_colors = [
     '#52C3F1',
     '#231F20',
@@ -18,25 +28,23 @@ signature_colors = [
     '#EDBFC2']
 
 signature_colors_by_subtype = {
-    'A>C': '#EDBFC2',
-    'A>G': '#97D54C',
-    'A>T': '#CBC9C8',
-    'C>A': '#52C3F1',
-    'C>G': '#231F20',
-    'C>T': '#E62223',
-    'G>A': '#E62223',
-    'G>C': '#231F20',
-    'G>T': '#52C3F1',
-    'T>A': '#CBC9C8',
-    'T>C': '#97D54C',
-    'T>G': '#EDBFC2'}
+    'A>C': '#EDBFC2', 'A>G': '#97D54C', 'A>T': '#CBC9C8',
+    'C>A': '#52C3F1', 'C>G': '#231F20', 'C>T': '#E62223',
+    'G>A': '#E62223', 'G>C': '#231F20', 'G>T': '#52C3F1',
+    'T>A': '#CBC9C8', 'T>C': '#97D54C', 'T>G': '#EDBFC2'}
+
+longform_subtype = {
+    'A>C': 'A:T→C:G', 'A>G': 'A:T→G:C', 'A>T': 'A:T→T:A',
+    'C>A': 'C:G→A:T', 'C>G': 'C:G→G:C', 'C>T': 'C:G→T:A',
+    'G>A': 'G:C→A:T', 'G>C': 'G:C→C:G', 'G>T': 'G:C→T:A',
+    'T>A': 'A:T→T:A', 'T>C': 'A:T→G:C', 'T>G': 'A:T→C:G'}
 
 purines = {'A', 'G'}
 pyrimidines = {'C', 'T'}
 nucleotides = purines.union(pyrimidines)
 
 
-class SNV:
+class Snv:
     def __init__(self, reference: str, alternate: str, context=None):
         if len(reference) != 1:
             raise ValueError('Reference must be a single base')
@@ -49,7 +57,7 @@ class SNV:
 
     @property
     def context(self):
-        """Return the context of this SNV."""
+        """Return the context of this Snv."""
         return self._context
 
     @context.setter
@@ -58,7 +66,7 @@ class SNV:
         matches the reference.
 
         context : str
-            The context of this SNV, defaults to reference.
+            The context of this Snv, defaults to reference.
 
         """
         if len(context) % 2 != 1:
@@ -71,9 +79,9 @@ class SNV:
 
     @property
     def with_purine_reference(self):
-        """Return this SNV with its reference as a purine."""
+        """Return this Snv with its reference as a purine."""
         if self.reference not in purines:
-            return SNV(
+            return Snv(
                 reference=complement(self.reference),
                 alternate=complement(self.alternate),
                 context=reverse_complement(self.context))
@@ -82,9 +90,9 @@ class SNV:
 
     @property
     def with_pyrimidine_reference(self):
-        """Return this SNV with its reference as a pyrimidine."""
+        """Return this Snv with its reference as a pyrimidine."""
         if self.reference not in pyrimidines:
-            return SNV(
+            return Snv(
                 reference=complement(self.reference),
                 alternate=complement(self.alternate),
                 context=reverse_complement(self.context))
@@ -93,7 +101,7 @@ class SNV:
 
     def copy(self):
         """Make a deep copy of this object."""
-        return SNV(self.reference, self.alternate, self.context)
+        return Snv(self.reference, self.alternate, self.context)
 
     def __eq__(self, other):
         """Return if the reference, alternate, and context are equal."""
@@ -142,7 +150,7 @@ class Spectrum:
                 lambda kmer: kmer[int((k - 1) / 2)] == reference,
                 kmers
             ):
-                snv = SNV(reference, alternate, context)
+                snv = Snv(reference, alternate, context)
                 self._context_weights[context] = 1
                 self._substitutions[snv] = 0
 
@@ -196,7 +204,7 @@ class Spectrum:
         if key in self._substitutions:
             self._substitutions[key] = item
         else:
-            raise KeyError(f'SNV not in spectrum: {key}')
+            raise KeyError(f'Snv not in spectrum: {key}')
 
     def __repr__(self):
         if self.reference_notation:
@@ -211,18 +219,24 @@ class Spectrum:
 
 
 def dna_kmers(k=3):
-    """Return the cartesian product of all DNA kmers of length k.
+    """Return the cartesian product of all DNA substrings of length k.
 
     Parameters
     ----------
     k : int
-        Length of of the DNA kmer.
+        Length of of the DNA substring.
 
     Returns
     -------
     generator of str
-        Alphabetically sorted cartesian product of all DNA kmers of
-        length k.
+        Cartesian product of all DNA substrings of length k.
+
+    Examples
+    --------
+    >>> list(dna_kmers(1))
+    ['A', 'C', 'G', 'T']
+    >>> len(list(dna_kmers(3)))
+    64
 
     """
     for parts in product(sorted(nucleotides), repeat=k):
