@@ -45,7 +45,7 @@ Please see [Contributing](#contributing) for feature requests and an intended ro
 <h3 align="center">Installation</h3>
 
 ```
-❯ pip install git+https://github.com/clintval/snv-spectrum.git
+❯ pip install snv_spectrum
 ```
 
 <br>
