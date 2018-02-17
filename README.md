@@ -136,7 +136,7 @@ import numpy
 
 spectrum = Spectrum(k=3, reference_notation='pyrimidine')
 
-for snv, count in zip(spectrum.substitutions, vector):
+for snv, count in zip(spectrum.substitutions, range(96)):
      spectrum[snv] = numpy.random.randint(20)
 
 fig, axes = plot_spectrum(spectrum, kind='density')
