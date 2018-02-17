@@ -11,24 +11,24 @@
 </p>
 
 <p align="center">
-  <a href="https://travis-ci.org/clintval/snv-spcetrum">
-    <img src="https://travis-ci.org/clintval/snv-spcetrum.svg?branch=master"></img>
+  <a href="https://travis-ci.org/clintval/snv-spectrum">
+    <img src="https://travis-ci.org/clintval/snv-spectrum.svg?branch=master"></img>
   </a>
 
-  <a href="https://codecov.io/gh/clintval/snv-spcetrum">
-    <img src="https://codecov.io/gh/clintval/snv-spcetrum/branch/master/graph/badge.svg"></img>
+  <a href="https://codecov.io/gh/clintval/snv-spectrum">
+    <img src="https://codecov.io/gh/clintval/snv-spectrum/branch/master/graph/badge.svg"></img>
   </a>
 
   <a href="https://badge.fury.io/py/snv_spectrum">
     <img src="https://badge.fury.io/py/snv_spectrum.svg" alt="PyPI version"></img>
   </a>
 
-  <a href="https://github.com/clintval/snv-spcetrum/issues">
-    <img src="https://img.shields.io/github/issues/clintval/snv-spcetrum.svg"></img>
+  <a href="https://github.com/clintval/snv-spectrum/issues">
+    <img src="https://img.shields.io/github/issues/clintval/snv-spectrum.svg"></img>
   </a>
 
-  <a href="https://github.com/clintval/snv-spcetrum/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/clintval/snv-spcetrum.svg"></img>
+  <a href="https://github.com/clintval/snv-spectrum/blob/master/LICENSE">
+    <img src="https://img.shields.io/github/license/clintval/snv-spectrum.svg"></img>
   </a>
 </p>
 
