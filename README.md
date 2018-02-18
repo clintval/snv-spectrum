@@ -57,7 +57,7 @@ The base unit of the library is the `Snv` which represents a transition or trans
 The local context must be symmetrical in length about the base substitution.
 
 ```python
-from snv_spectrum import Snv, Spectrum, plot_spectrum
+from snv_spectrum import Snv
 
 snv = Snv(reference='G', alternate='T', context='AGC')
 ```
@@ -72,6 +72,7 @@ Snv(reference="C", alternate="A", context="GCT")
 You can automatically generate a spectrum of `Snv` by specifying both the size of the local context and the reference notation.
 
 ```python
+>>> from snv_spectrum import Spectrum
 >>> spectrum = Spectrum(k=3, reference_notation='pyrimidine')
 >>> list(Spectrum(k=3, reference_notation='pyrimidine'))
 """
@@ -134,6 +135,8 @@ The figure and axes are returned to allow for custom formatting.
 ```python
 import numpy
 
+from snv_spectrum import plot_spectrum
+
 spectrum = Spectrum(k=3, reference_notation='pyrimidine')
 
 for snv, count in zip(spectrum.substitutions, range(96)):
@@ -144,7 +147,24 @@ fig, axes = plot_spectrum(spectrum, kind='density')
 
 ![Demo Plot Random][demo-plot-random]
 
+##### Fetching COSMIC Signatures
+
+A helper function is provided to download the [COSMIC signatures](http://cancer.sanger.ac.uk/cosmic/signatures) of mutational processes in human cancer.
+
+```python
+from snv_spectrum import get_cosmic_signatures
+
+cosmic_signatures = get_cosmic_signatures()
+
+fig, axes = plot_spectrum(cosmic_signatures['Signature 1'], kind='density')
+fig, axes = plot_spectrum(cosmic_signatures['Signature 14'], kind='density')
+```
+![Signature 1][signature-1]
+![Signature 14][signature-14]
+
 [demo-plot-random]: docs/img/demo-plot-random.png "Demo Plot Random"
+[signature-1]: docs/img/signature-1.png "Signature 1"
+[signature-14]: docs/img/signature-14.png "Signature 14"
 
 <br>
 

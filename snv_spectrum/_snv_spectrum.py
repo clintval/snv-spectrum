@@ -1,6 +1,9 @@
-from collections import Counter
-from itertools import permutations
-from itertools import product
+import csv
+import io
+import urllib.request as request
+
+from collections import Counter, defaultdict
+from itertools import permutations, product
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -13,6 +16,7 @@ __all__ = [
     'Snv',
     'Spectrum',
     'dna_kmers',
+    'get_cosmic_signatures',
     'plot_spectrum',
     'purines',
     'pyrimidines',
@@ -42,6 +46,10 @@ longform_subtype = {
 purines = {'A', 'G'}
 pyrimidines = {'C', 'T'}
 nucleotides = purines.union(pyrimidines)
+
+COSMIC_SIGNATURE_URL = (
+    'http://cancer.sanger.ac.uk/'
+    'cancergenome/assets/signatures_probabilities.txt')
 
 
 class Snv:
@@ -241,6 +249,33 @@ def dna_kmers(k=3):
     """
     for parts in product(sorted(nucleotides), repeat=k):
         yield ''.join(parts)
+
+
+def get_cosmic_signatures():
+    """Download the COSMIC published signatures.
+
+    Returns
+    -------
+    cosmic_signatures : defaultdict
+        The probability densities of the COSMIC signatures.
+
+    """
+    all_signatures = defaultdict(
+        lambda: Spectrum(k=3, reference_notation='pyrimidine'))
+
+    with request.urlopen(COSMIC_SIGNATURE_URL) as handle:
+        reader = csv.reader(io.TextIOWrapper(handle), delimiter='\t')
+        # First three columns are subtype, column, and label titles
+        _, _, _, *signature_titles = list(filter(None, next(reader)))
+
+        for line in reader:
+            subtype, context, _, *points = list(filter(None, line))
+            for title, point in zip(signature_titles, map(float, points)):
+                # Split the subtype to get reference and alternate
+                snv = Snv(*subtype.split('>'), context)
+                all_signatures[title][snv] = point
+
+    return all_signatures
 
 
 def plot_spectrum(
