@@ -168,6 +168,9 @@ class Spectrum:
 
     @property
     def density(self):
+        if sum(self.substitutions.values()) == 0:
+            raise ValueError('Spectrum has no values and therefore no density')
+
         proportions = dict()
         for snv, count in self.substitutions.items():
             proportions[snv] = count / self.context_weights[snv.context]
