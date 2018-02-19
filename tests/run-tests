@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+nosetests \
+  -v \
+  --progressive-with-bar \
+  --with-coverage \
+  --with-doctest \
+  --doctest-tests \
+  --cover-package=snv_spectrum \
+  --with-progressive \
+  "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" \
+  "${@}"

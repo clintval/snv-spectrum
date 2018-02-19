@@ -54,10 +54,10 @@ COSMIC_SIGNATURE_URL = (
 
 class Snv:
     def __init__(self, reference: str, alternate: str, context=None):
-        if len(reference) != 1:
-            raise ValueError('Reference must be a single base')
-        if len(alternate) != 1:
-            raise ValueError('Alternate must be a single base')
+        if reference not in nucleotides:
+            raise ValueError(f'Reference must be DNA nucleotide: {reference}')
+        if alternate not in nucleotides:
+            raise ValueError(f'Reference must be DNA nucleotide: {alternate}')
 
         self.reference = reference
         self.alternate = alternate
