@@ -2,9 +2,6 @@ from unittest import TestCase
 
 import numpy as np
 
-import matplotlib
-matplotlib.use('agg')
-
 from snv_spectrum import *  # Test import of __all__
 
 # Will need to follow instructions here for easy image comparison

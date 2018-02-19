@@ -5,9 +5,6 @@ from nose.tools import eq_
 
 from unittest import TestCase
 
-import matplotlib
-matplotlib.use('agg')
-
 from snv_spectrum import *  # Test import of __all__
 
 
