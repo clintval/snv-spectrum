@@ -1,6 +1,8 @@
-from unittest import TestCase
-
 import numpy as np
+
+from nose.tools import assert_raises
+
+from unittest import TestCase
 
 from snv_spectrum import *  # Test import of __all__
 
@@ -23,3 +25,14 @@ class TestPlotSpectrum(TestCase):
             spectrum[snv] = count
 
         fig, (ax_main, ax_cbar) = plot_spectrum(spectrum, kind='count')
+        fig, (ax_main, ax_cbar) = plot_spectrum(spectrum, kind='density')
+
+    def test_init_with_invalid_argument_values(self):
+        """Test for ``plot_spectrum`` with invalid argument values"""
+        assert_raises(ValueError, plot_spectrum, ['list', 'of', 'values'])
+        assert_raises(ValueError, plot_spectrum, Spectrum(k=1))
+        assert_raises(
+            ValueError,
+            plot_spectrum,
+            Spectrum(k=3, reference_notation='pyrimidine'),
+            kind='boxplot')

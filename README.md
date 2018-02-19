@@ -11,25 +11,11 @@
 </p>
 
 <p align="center">
-  <a href="https://travis-ci.org/clintval/snv-spectrum">
-    <img src="https://travis-ci.org/clintval/snv-spectrum.svg?branch=master"></img>
-  </a>
-
-  <a href="https://codecov.io/gh/clintval/snv-spectrum">
-    <img src="https://codecov.io/gh/clintval/snv-spectrum/branch/master/graph/badge.svg"></img>
-  </a>
-
-  <a href="https://badge.fury.io/py/snv_spectrum">
-    <img src="https://badge.fury.io/py/snv_spectrum.svg" alt="PyPI version"></img>
-  </a>
-
-  <a href="https://github.com/clintval/snv-spectrum/issues">
-    <img src="https://img.shields.io/github/issues/clintval/snv-spectrum.svg"></img>
-  </a>
-
-  <a href="https://github.com/clintval/snv-spectrum/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/clintval/snv-spectrum.svg"></img>
-  </a>
+  <a href="https://travis-ci.org/clintval/snv-spectrum"><img src="https://travis-ci.org/clintval/snv-spectrum.svg?branch=master"></img></a>
+  <a href="https://codecov.io/gh/clintval/snv-spectrum"><img src="https://codecov.io/gh/clintval/snv-spectrum/branch/master/graph/badge.svg"></img></a>
+  <a href="https://badge.fury.io/py/snv_spectrum"><img src="https://badge.fury.io/py/snv_spectrum.svg" alt="PyPI version"></img></a>
+  <a href="https://codeclimate.com/github/clintval/snv-spectrum/maintainability"><img src="https://api.codeclimate.com/v1/badges/7f6ce7780716a92c40b8/maintainability"></img></a>
+  <a href="https://github.com/clintval/snv-spectrum/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/snv-spectrum.svg"></img></a>
 </p>
 
 <br>
@@ -105,7 +91,7 @@ Many spectra are produced from whole-genome or whole-exome sequencing experiment
 
 By default each `Snv` is given a weight of 1 and calling `spectrum.density` will simply give the proportion of `Snv` counts in the `Spectrum`. After weights are set to the observed _kmer_ counts or frequency of the target territory, calling `spectrum.density` will compute a true normalized probability density.
 
-All weights can be set with assignment _e.g._: `spectrum.weights['ACA'] = 23420`.
+All weights can be set with assignment _e.g._: `spectrum.context_weights['ACA'] = 23420`.
 
 ```python
 >>> spectrum.density

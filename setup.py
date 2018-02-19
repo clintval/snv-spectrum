@@ -14,13 +14,13 @@ except (ImportError, OSError):
 setup(
     name='snv_spectrum',
     packages=['snv_spectrum'],
-    version='0.2.0',
+    version='0.3.0',
     description='A Python 3.6 library for plotting mutational spectra.',
     long_description=long_description,
     author='clintval',
     author_email='valentine.clint@gmail.com',
     url='https://github.com/clintval/snv-spectrum',
-    download_url='https://github.com/clintval/snv-spectrum/archive/v0.2.0.tar.gz',
+    download_url='https://github.com/clintval/snv-spectrum/archive/v0.3.0.tar.gz',
     py_modules=['snv_spectrum'],
     install_requires=[
         'biopython',
