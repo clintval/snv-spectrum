@@ -2,13 +2,13 @@ from unittest import TestCase
 
 import numpy as np
 
+import matplotlib
+matplotlib.use('agg')
+
 from snv_spectrum import *  # Test import of __all__
 
 # Will need to follow instructions here for easy image comparison
 # http://www.davidketcheson.info/2015/01/13/using_matplotlib_image_comparison.html
-
-# import matplotlib
-# matplotlib.use('agg')
 
 # from matplotlib.testing.decorators import image_comparison
 

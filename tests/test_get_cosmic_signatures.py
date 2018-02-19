@@ -2,6 +2,9 @@ from nose.tools import assert_is_instance
 
 from unittest import TestCase
 
+import matplotlib
+matplotlib.use('agg')
+
 from snv_spectrum import *  # Test import of __all__
 
 
