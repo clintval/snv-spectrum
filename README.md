@@ -1,6 +1,6 @@
 <h1 align="center">snv-spectrum</h2>
 
-<p align="center">A Python 3.6 library for plotting mutational spectra</p>
+<p align="center">Analysis and plotting library for base substitution spectra and signatures</p>
 
 <p align="center">
   <a href="#installation"><strong>Installation</strong></a>
@@ -36,9 +36,7 @@
 
 A base substitution spectrum includes the frequency or probability of all transition and transversions in the DNA grammar. Including the local context of the base substitution aids in the interpretation of biochemical process and disease etiology.
 
-This **in-development** library will aid in the construction of spectrums with different local context sizes and their visualization in Python.
-
-Please see [Contributing](#contributing) for feature requests and an intended roadmap.
+This library aids in the analysis of spectrums with different local context sizes and their visualization.
 
 <br>
 
@@ -126,9 +124,7 @@ _Kmer_ counts can be found with [`skbio.DNA.kmer_frequencies`](http://scikit-bio
 
 ##### Plotting
 
-Spectra with `k=3` in either `pyrimidine` or `purine` reference notation can be plotted using a style that was first used in Alexandrov _et. al._  in 2013 (PMID: [23945592](https://www.ncbi.nlm.nih.gov/pubmed/23945592)).
-
-Both `Snv` raw counts (`kind="count"`) or their probabilities (`kind="density"`) can be plotted.
+Spectra with `k=3` in either `pyrimidine` or `purine` reference notation can be plotted using a style that was first used in Alexandrov _et. al._  in 2013 (PMID: [23945592](https://www.ncbi.nlm.nih.gov/pubmed/23945592)). Both `Snv` raw counts (`kind="count"`) or their probabilities (`kind="density"`) can be plotted.
 
 The figure and axes are returned to allow for custom formatting.
 
@@ -142,14 +138,14 @@ spectrum = Spectrum(k=3, reference_notation='pyrimidine')
 for snv, count in zip(spectrum.substitutions, range(96)):
      spectrum[snv] = numpy.random.randint(20)
 
-fig, axes = plot_spectrum(spectrum, kind='density')
+fig, (ax_main, ax_cbar) = plot_spectrum(spectrum, kind='density')
 ```
 
 ![Demo Plot Random][demo-plot-random]
 
 ##### Fetching COSMIC Signatures
 
-A helper function is provided to download the [COSMIC signatures](http://cancer.sanger.ac.uk/cosmic/signatures) of mutational processes in human cancer.
+You can also directly download and view the published [COSMIC signatures](http://cancer.sanger.ac.uk/cosmic/signatures) of mutational processes in human cancer.
 
 ```python
 from snv_spectrum import get_cosmic_signatures
@@ -162,14 +158,25 @@ fig, axes = plot_spectrum(cosmic_signatures['Signature 14'], kind='density')
 ![Signature 1][signature-1]
 ![Signature 14][signature-14]
 
-[demo-plot-random]: docs/img/demo-plot-random.png "Demo Plot Random"
-[signature-1]: docs/img/signature-1.png "Signature 1"
-[signature-14]: docs/img/signature-14.png "Signature 14"
-
 <br>
 
 <h3 align="center">Contributing</h3>
 
 Pull requests, feature requests, and issues welcome!
 
-Unit tests, continuous test integration, docstrings, and code coverage to come soon.
+To make a development install:
+
+```bash
+❯ git clone git@github.com:clintval/snv-spectrum.git
+❯ pip install -e 'snv-spectrum[fancytest]'
+```
+
+To run the tests:
+
+```bash
+❯ ./snv-spectrum/tests/run-tests
+```
+
+[demo-plot-random]: docs/img/demo-plot-random.png "Demo Plot Random"
+[signature-1]: docs/img/signature-1.png "Signature 1"
+[signature-14]: docs/img/signature-14.png "Signature 14"
