@@ -1,0 +1,19 @@
+sudo: false
+
+language: python
+
+python:
+  - 3.6
+  - nightly
+
+install:
+  - pip install '.[ci]'
+
+script:
+  - nosetests -v --with-coverage --cover-package=snv_spectrum --cover-xml
+
+after_success:
+  - codecov
+
+notifications:
+  email: false
