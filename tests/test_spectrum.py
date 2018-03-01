@@ -25,7 +25,7 @@ class TestSpectrum(TestCase):
         assert_raises(ValueError, Spectrum, reference_notation=2)
 
     def test_init_with_valid_arguments(self):
-        """Tests default init with valid arguments"""
+        """Test default init with valid arguments"""
         spectrum = Spectrum()
 
         eq_(spectrum.k, 1)
@@ -35,12 +35,12 @@ class TestSpectrum(TestCase):
         assert_set_equal(set(spectrum.substitutions.values()), {0})
 
     def test_reference_notation_none(self):
-        """Tests ``reference`` == `None`"""
+        """Test ``reference`` == `None`"""
         spectrum = Spectrum()
         assert_set_equal(set(spectrum.contexts), {'A', 'C', 'G', 'T'})
 
     def test_substitution_types(self):
-        """Tests ``substitution_types()```"""
+        """Test ``substitution_types()```"""
         assert_list_equal(
             Spectrum(reference_notation=None).substitution_types,
             ['A>C', 'A>G', 'A>T', 'C>A', 'C>G', 'C>T',
@@ -55,7 +55,7 @@ class TestSpectrum(TestCase):
             ['A>C', 'A>G', 'A>T', 'G>A', 'G>C', 'G>T'])
 
     def test_context_weights(self):
-        """Tests ``context_weights`` for init and __set_item__"""
+        """Test ``context_weights`` for init and __set_item__"""
         spectrum = Spectrum()
 
         assert_dict_equal(
