@@ -1,11 +1,12 @@
 #!/usr/bin/env sh
+
+this="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 nosetests \
-  -v \
-  --progressive-with-bar \
-  --with-coverage \
+  --verbosity=1 \
+  --ignore-files '^\.'\
+  --ignore-files '^setup\.py$' \
   --with-doctest \
-  --doctest-tests \
+  --with-coverage \
   --cover-package=snv_spectrum \
-  --with-progressive \
-  "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" \
-  "${@}"
+  --where "${this}"/..

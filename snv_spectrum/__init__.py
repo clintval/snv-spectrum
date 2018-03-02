@@ -1,1 +1,4 @@
-from ._snv_spectrum import *
+from ._models import *
+
+from snv_spectrum import figures
+from snv_spectrum import util

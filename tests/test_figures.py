@@ -5,6 +5,7 @@ from nose.tools import assert_raises
 from unittest import TestCase
 
 from snv_spectrum import *  # Test import of __all__
+from snv_spectrum.figures import *  # Test import of __all__
 
 # Will need to follow instructions here for easy image comparison
 # http://www.davidketcheson.info/2015/01/13/using_matplotlib_image_comparison.html
@@ -36,3 +37,16 @@ class TestPlotSpectrum(TestCase):
             plot_spectrum,
             Spectrum(k=3, reference_notation='pyrimidine'),
             kind='boxplot')
+
+
+class TestTiTv(TestCase):
+    """Unit tests for ``TiTv``"""
+
+    def test_plot_spectrum_output(self):
+        """Test ``TiTv()`` image output"""
+        np.random.seed(1)
+        vector = np.random.randint(10, size=96)
+
+        spectrum = Spectrum(k=3, reference_notation='pyrimidine')
+        for snv, count in zip(spectrum.substitutions, vector):
+            spectrum[snv] = count

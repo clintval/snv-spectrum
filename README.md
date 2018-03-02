@@ -6,8 +6,6 @@
   <a href="#installation"><strong>Installation</strong></a>
   ·
   <a href="#tutorial"><strong>Tutorial</strong></a>
-  ·
-  <a href="#contributing"><strong>Contributing</strong></a>
 </p>
 
 <p align="center">
@@ -36,142 +34,166 @@ This library aids in the analysis of spectrums with different local context size
 
 <h3 align="center">Tutorial</h3>
 
-The base unit of the library is the `Snv` which represents a transition or transversion in a given local context.
+### Nucleotides
 
-The local context must be symmetrical in length about the base substitution.
+The `Nt` class represents an IUPAC valid code for a non-degenerate DNA nucleotide.
 
 ```python
-from snv_spectrum import Snv
-
-snv = Snv(reference='G', alternate='T', context='AGC')
+>>> from snv_spectrum import Nt
+>>> Nt('A').is_purine
+True
 ```
 
-The context can also be set by performing a lookup on an FASTA file. This example requires the install of [`pyfaidx`](https://github.com/mdshw5/pyfaidx).
+### SNV
+
+The codes for the for residues adenosine, cytosine, guanine, and thymine are aliased for ease of creating compound objects like a single nucleotide variant (`Snv`):
 
 ```python
->>> snv = Snv(reference='G', alternate='T')
->>> snv.set_context_from_fasta_locus(infile, contig='chr1', position=20334, k=5)
->>> snv.context
-'TAGCC'
+>>> from snv_spectrum.extra import A, C, G, T
+>>> A == Nt('A')
+True
+>>> A.to(C)
+Snv(ref=A, alt=C, context="A")
 ```
 
-Unless the chemical process for the base substitution is specifically known it is useful to represent all base substitutions in a canonical form with either a pyrimidine or purine as the reference base.
+By default, the context of the variant is assigned to the reference base, although a larger context can be set.
+The context must be symmetrical in length about the base substitution otherwise an error will be raised.
 
 ```python
->>> snv.with_pyrimidine_reference
-Snv(reference="C", alternate="A", context="GCT")
+>>> A.to(C).within('TAG')
+Snv(ref=A, alt=C, context="TAG")
 ```
 
-You can automatically generate a spectrum of `Snv` by specifying both the size of the local context and the reference notation.
+Unless the chemical process for the base substitution is known, it is useful to represent all base substitutions in a canonical form, with either a purine or pyrimidine as the reference base.
 
 ```python
->>> from snv_spectrum import Spectrum
->>> spectrum = Spectrum(k=3, reference_notation='pyrimidine')
->>> list(Spectrum(k=3, reference_notation='pyrimidine'))
+>>> A.to(C).within('TAG').with_pyrimidine_ref()
+Snv(ref=T, alt=G, context="CTA")
+```
+
+A complete example showing the creation of a notation normalized `Snv` object from strings only:
+
+```python
+>>> ref, alt, context = Nt('A'), Nt('C'), 'TAG'
+>>> snv = ref.to(alt).within(context).with_pyrimidine_ref()
+>>> snv.is_transversion
+True
+```
+
+Each `Snv` has a color associated with it for a uniform color palette.
+
+```python
+>>> snv.color
+'#EDBFC2'
+```
+
+An `Snv` can also hold a positional identifier in the `locus` property.
+
+```python
+>>> snv.at('chr3:2000')
+>>> snv.locus
+"ch3:2000"
+```
+
+### SNV Spectrums
+
+A `Spectrum` can be initialized by specifying the size of the local context and the reference notation.
+
+```python
+>>> from snv_spectrum import Spectrum, Notation
+>>> spectrum = Spectrum(k=3, notation=Notation.pyrimidine)
+>>> spectrum.counts
 """
-[(Snv(reference="C", alternate="A", context="ACA"), 0),
- (Snv(reference="C", alternate="A", context="ACC"), 0),
- (Snv(reference="C", alternate="A", context="ACG"), 0),
- (Snv(reference="C", alternate="A", context="ACT"), 0),
- (Snv(reference="C", alternate="A", context="CCA"), 0),
- (Snv(reference="C", alternate="A", context="CCC"), 0),
+{Snv(ref=C, alt=A, context="ACA"): 0,
+ Snv(ref=C, alt=A, context="ACC"): 0,
+ Snv(ref=C, alt=A, context="ACG"): 0,
+ Snv(ref=C, alt=A, context="ACT"): 0,
+ Snv(ref=C, alt=A, context="CCA"): 0,
+ Snv(ref=C, alt=A, context="CCC"): 0,
  ...
 """
 ```
 
-Begin to record observations by accessing the `Spectrum` like a Python dictionary.
+Record observations by accessing the `Spectrum` like a Python dictionary.
 
 ```python
 spectrum[snv] += 2
 ```
 
-If you already have a vector of counts or probabilities then you can build a `Spectrum` quickly as long as the data is listed in the correct lexicographic order of the chosen reference notation.
+> *Note*: this is shorthand for `spectrum.counts[snv] += 2`.
+
+If you have a vector of counts, or probabilities, then you can directly build a `Spectrum` as long as the data is listed in the correct alphabetic order of the `Spectrum` keys.
 
 ```python
-vector = [0, 2, 3, 4, ..., 95]
-spectrum = Spectrum(k=3, reference_notation='pyrimidine')
-for snv, count in zip(spectrum.substitutions, vector):
-    spectrum[snv] = count
+>>> vector = [6, 5, 2, 2, 3, 8]
+>>> Spectrum.from_iterable(vector, k=1, notation=Notation.pyrimidine).counts
+"""
+{Snv(ref=C, alt=A, context="C"): 6,
+ Snv(ref=C, alt=G, context="C"): 5,
+ Snv(ref=C, alt=T, context="C"): 2,
+ Snv(ref=T, alt=A, context="T"): 2,
+ Snv(ref=T, alt=C, context="T"): 3,
+ Snv(ref=T, alt=G, context="T"): 8}
+"""
 ```
 
-##### Working with Probability
+### Working with Probability
 
 Many spectra are produced from whole-genome or whole-exome sequencing experiments. Spectra must be normalized to the _kmer_ frequencies in the target study. Without normalization, no valid spectrum comparison can be made between data generated from different target territories or species.
 
-By default each `Snv` is given a weight of 1 and calling `spectrum.density` will simply give the proportion of `Snv` counts in the `Spectrum`. After weights are set to the observed _kmer_ counts or frequency of the target territory, calling `spectrum.density` will compute a true normalized probability density.
+By default each `Snv` is given a weight of 1 and calling `spectrum.mass()` will simply give the proportion of `Snv` counts in the `Spectrum`. After weights are set to the observed _kmer_ counts or frequency of the target territory, calling `spectrum.mass()` will compute a true normalized probability mass.
 
 All weights can be set with assignment _e.g._: `spectrum.context_weights['ACA'] = 23420`.
 
 ```python
->>> spectrum.density
+>>> spectrum.mass()
 """
-{Snv(reference="C", alternate="A", context="ACA"): 0.015677491601343786,
- Snv(reference="C", alternate="A", context="ACC"): 0.007838745800671893,
- Snv(reference="C", alternate="A", context="ACG"): 0.0011198208286674132,
- Snv(reference="C", alternate="A", context="ACT"): 0.006718924972004479,
- Snv(reference="C", alternate="A", context="CCA"): 0.010078387458006719,
- Snv(reference="C", alternate="A", context="CCC"): 0.008958566629339306,
+{Snv(ref=C, alt=A, context="ACA"): 0.015677491601343786,
+ Snv(ref=C, alt=A, context="ACC"): 0.007838745800671893,
+ Snv(ref=C, alt=A, context="ACG"): 0.0011198208286674132,
+ Snv(ref=C, alt=A, context="ACT"): 0.006718924972004479,
+ Snv(ref=C, alt=A, context="CCA"): 0.010078387458006719,
+ Snv(ref=C, alt=A, context="CCC"): 0.008958566629339306,
  ...
 """
 ```
 
 _Kmer_ counts can be found with [`skbio.DNA.kmer_frequencies`](http://scikit-bio.org/docs/latest/generated/skbio.sequence.DNA.kmer_frequencies.html) for small targets and with [`jellyfish`](http://www.genome.umd.edu/jellyfish.html) for large targets.
 
-##### Plotting
+### Fetching COSMIC Signatures
 
-Spectra with `k=3` in either `pyrimidine` or `purine` reference notation can be plotted using a style that was first used in Alexandrov _et. al._  in 2013 (PMID: [23945592](https://www.ncbi.nlm.nih.gov/pubmed/23945592)). Both `Snv` raw counts (`kind="count"`) or their probabilities (`kind="density"`) can be plotted.
+Download the published [COSMIC signatures](http://cancer.sanger.ac.uk/cosmic/signatures) of mutational processes in human cancer:
+
+```python
+>>> from snv_spectrum.util import fetch_cosmic_signatures
+>>> fetch_cosmic_signatures()
+"""
+{'Signature 1': Spectrum(k=3, notation=Notation.pyrimidine),
+ 'Signature 2': Spectrum(k=3, notation=Notation.pyrimidine),
+ 'Signature 3': Spectrum(k=3, notation=Notation.pyrimidine),
+ 'Signature 4': Spectrum(k=3, notation=Notation.pyrimidine),
+ 'Signature 5': Spectrum(k=3, notation=Notation.pyrimidine),
+...
+"""
+```
+
+### Plotting Spectrums
+
+Spectra with `k=3` in either `pyrimidine` or `purine` reference notation can be plotted using a style that was first used in Alexandrov _et. al._  in 2013 (PMID: [23945592](https://www.ncbi.nlm.nih.gov/pubmed/23945592)). Both `Snv` raw counts (`kind="count"`) or their probabilities (`kind="mass"`) can be plotted.
 
 The figure and axes are returned to allow for custom formatting.
 
 ```python
-import numpy
-
 from snv_spectrum import plot_spectrum
 
-spectrum = Spectrum(k=3, reference_notation='pyrimidine')
+cosmic_signatures = fetch_cosmic_signatures()
 
-for snv, count in zip(spectrum.substitutions, range(96)):
-     spectrum[snv] = numpy.random.randint(20)
-
-fig, (ax_main, ax_cbar) = plot_spectrum(spectrum, kind='density')
+fig, (ax_main, ax_cbar) = plot_spectrum(cosmic_signatures['Signature 1'], kind='mass')
+fig, (ax_main, ax_cbar) = plot_spectrum(cosmic_signatures['Signature 14'], kind='mass')
 ```
 
-![Demo Plot Random][demo-plot-random]
-
-##### Fetching COSMIC Signatures
-
-You can also directly download and view the published [COSMIC signatures](http://cancer.sanger.ac.uk/cosmic/signatures) of mutational processes in human cancer.
-
-```python
-from snv_spectrum import get_cosmic_signatures
-
-cosmic_signatures = get_cosmic_signatures()
-
-fig, axes = plot_spectrum(cosmic_signatures['Signature 1'], kind='density')
-fig, axes = plot_spectrum(cosmic_signatures['Signature 14'], kind='density')
-```
 ![Signature 1][signature-1]
 ![Signature 14][signature-14]
 
-<br>
-
-<h3 align="center">Contributing</h3>
-
-Pull requests, feature requests, and issues welcome!
-
-To make a development install:
-
-```bash
-❯ git clone git@github.com:clintval/snv-spectrum.git
-❯ pip install -e 'snv-spectrum[fancytest]'
-```
-
-To run the tests:
-
-```bash
-❯ ./snv-spectrum/tests/run-tests
-```
-
-[demo-plot-random]: docs/img/demo-plot-random.png "Demo Plot Random"
 [signature-1]: docs/img/signature-1.png "Signature 1"
 [signature-14]: docs/img/signature-14.png "Signature 14"

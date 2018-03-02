@@ -31,21 +31,20 @@ setup(
     install_requires=[
         'biopython',
         'matplotlib',
+        'mpl_helpers',
         'numpy',
+        'palettable',
+        'pyfaidx'
     ],
     extras_require={
-        'ci': [
-            'nose',
-            'codecov',
-            'pyfaidx'],
-        'fancytest': [
-            'nose',
-            'nose-progressive',
-            'coverage'],
+        'ci': ['nose', 'codecov'],
+        'cluster-ready': ['fastcluster', 'scipy', 'polo'],
     },
     license='MIT',
     zip_safe=True,
-    keywords=' '.join(KEYWORDS),
+    keywords=(
+        'signature mutation transition transversion spectra bioinformatics'
+    ),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
