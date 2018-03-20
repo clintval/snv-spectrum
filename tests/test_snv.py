@@ -1,3 +1,8 @@
+import pkgutil
+import unittest
+
+from tempfile import NamedTemporaryFile
+
 from nose.tools import assert_is_none
 from nose.tools import assert_not_equal
 from nose.tools import assert_raises
@@ -96,6 +101,31 @@ class TestSnv(TestCase):
         snv1 = Snv(reference='C', alternate='G')
         snv2 = snv1.copy()
         eq_(snv1, snv2)
+
+    @unittest.skipIf(
+        pkgutil.find_loader('pyfaidx') is None,
+        'module pyfaidx could not be found')
+    def def_set_context_from_fasta_locus(self):
+        """Test ``set_context_from_fasta_locus`` to set context from file"""
+        with NamedTemporaryFile('w') as infile:
+            fn = infile.name
+
+            infile.write('>seq\nAGTGAGGATGAGA')
+            infile.flush()
+
+            snv = Snv('G', 'A')
+            snv.set_context_from_fasta_locus(fn, contig='seq', position=1)
+            eq_(snv.context, 'AGT')
+
+            snv.set_context_from_fasta_locus(fn, contig='seq', position=6, k=5)
+            eq_(snv.context, 'AGGAT')
+
+            # Test that setting the context also emits the context.
+            context = snv.set_context_from_fasta_locus(
+                fn,
+                contig='seq',
+                position=1)
+            eq_(context, 'AGT')
 
     def test_id(self):
         """Test ``.__hash__()`` for memory inequality on copy"""

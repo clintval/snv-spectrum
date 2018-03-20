@@ -54,6 +54,15 @@ class TestSpectrum(TestCase):
             Spectrum(reference_notation='purine').substitution_types,
             ['A>C', 'A>G', 'A>T', 'G>A', 'G>C', 'G>T'])
 
+    def test_invalid_settitem(self):
+        """Test ``__setitem__()`` for not in keys"""
+        spectrum = Spectrum(k=1, reference_notation='pyrimidine')
+
+        assert_raises(
+            KeyError,
+            lambda snv: spectrum[snv],
+            Snv(reference='G', alternate='A', context='G'))
+
     def test_context_weights(self):
         """Test ``context_weights`` for init and __set_item__"""
         spectrum = Spectrum()
@@ -125,6 +134,13 @@ class TestSpectrum(TestCase):
         eq_(len(Spectrum(3)), 96 * 2)
         eq_(len(Spectrum(3, reference_notation='purine')), 96)
         eq_(len(Spectrum(3, reference_notation='pyrimidine')), 96)
+
+    def test_iter(self):
+        """Test ``__iter__()`` to iterate over substitution items"""
+        spectrum = Spectrum()
+        assert_list_equal(
+            list(spectrum),
+            list(spectrum.substitutions.items()))
 
     def test_str(self):
         """Test ``__str__()`` to be the same as ``__repr__()``"""

@@ -4,6 +4,7 @@ import urllib.request as request
 
 from collections import Counter, defaultdict
 from itertools import permutations, product
+from typing import Union
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -110,6 +111,45 @@ class Snv:
     def copy(self):
         """Make a deep copy of this object."""
         return Snv(self.reference, self.alternate, self.context)
+
+    def set_context_from_fasta_locus(
+        self,
+        infile: str,
+        contig: Union[int, str],
+        position: int,
+        k: int=3
+    ):
+        """Set the context by looking up a genomic loci from a FASTA.
+
+        The length of the context must be odd so the context can be symmetrical
+        in length about the the target position.
+
+        Parameters
+        ----------
+        infile : str
+            Filepath location to the FASTA file (preferrably indexed).
+        contig : int, str
+            The contig or chromosome name for the given locus.
+        position : int
+            The 0-based position in the chromosome that the context will be
+            centered on.
+        k : int
+            The length of the context, must be positive and odd.
+
+        """
+        from pyfaidx import Fasta
+        reference = Fasta(str(infile))
+
+        if not isinstance(position, int) and position >= 0:
+            raise ValueError('position must be a postitive integer')
+        if not isinstance(k, int) and k % 2 != 1 and k > 0:
+            raise ValueError('k must be a positive odd integer')
+
+        flank_length = (k - 1) / 2
+        start, end = position - flank_length - 1, position + flank_length
+        context = str(reference[contig][int(start):int(end)]).upper()
+        self.context = context
+        return context
 
     def __eq__(self, other):
         """Return if the reference, alternate, and context are equal."""
