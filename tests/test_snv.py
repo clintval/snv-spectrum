@@ -127,6 +127,25 @@ class TestSnv(TestCase):
                 position=1)
             eq_(context, 'AGT')
 
+            # Test argument validation on ``position`` and ``k``.
+            snv = Snv('G', 'A')
+            assert_raises(
+                ValueError,
+                lambda: snv.set_context_from_fasta_locus,
+                fn, contig='seq', position=1, k=2)
+            assert_raises(
+                ValueError,
+                lambda: snv.set_context_from_fasta_locus,
+                fn, contig='seq', position=1, k=-1)
+            assert_raises(
+                ValueError,
+                lambda: snv.set_context_from_fasta_locus,
+                fn, contig='seq', position=1.0, k=3)
+            assert_raises(
+                ValueError,
+                lambda: snv.set_context_from_fasta_locus,
+                fn, contig='seq', position='200', k=3)
+
     def test_id(self):
         """Test ``.__hash__()`` for memory inequality on copy"""
         snv1 = Snv(reference='C', alternate='G')
