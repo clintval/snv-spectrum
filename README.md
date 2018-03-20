@@ -46,6 +46,15 @@ from snv_spectrum import Snv
 snv = Snv(reference='G', alternate='T', context='AGC')
 ```
 
+The context can also be set by performing a lookup on an FASTA file. This example requires the install of [`pyfaidx`](https://github.com/mdshw5/pyfaidx).
+
+```python
+>>> snv = Snv(reference='G', alternate='T')
+>>> snv.set_context_from_fasta_locus(infile, contig='chr1', position=20334, k=5)
+>>> snv.context
+'TAGCC'
+```
+
 Unless the chemical process for the base substitution is specifically known it is useful to represent all base substitutions in a canonical form with either a pyrimidine or purine as the reference base.
 
 ```python
