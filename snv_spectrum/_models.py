@@ -1,12 +1,8 @@
-import csv
-import io
-import urllib.request as request
-
 from collections import Counter, defaultdict
 from enum import Enum
 from itertools import permutations, product
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Generator, Iterable, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
 
@@ -15,7 +11,7 @@ from Bio.Seq import reverse_complement
 from pyfaidx import Fasta
 
 from snv_spectrum.util import dna_kmers
-from snv_spectrum.util import IUPAC_MAPPING, CONTEXT_TYPE
+from snv_spectrum.util import NT_MAPPING, CONTEXT_TYPE
 from snv_spectrum.util import PURINES, PYRIMIDINES, SNV_COLOR
 
 __all__ = [
@@ -27,9 +23,9 @@ __all__ = [
 
 
 class Notation(Enum):
-    none = 0
-    pyrimidine = 1
-    purine = 2
+    none: int = 0
+    pyrimidine: int = 1
+    purine: int = 2
 
 
 class Nt(object):
@@ -37,7 +33,7 @@ class Nt(object):
         self,
         nt: Optional[str]='N'
     ) -> None:
-        if nt not in IUPAC_MAPPING:
+        if nt not in NT_MAPPING:
             raise ValueError(f'"{nt}" not a valid IUPAC code')
         self._nt = nt.upper()
 
@@ -56,7 +52,7 @@ class Nt(object):
     def to(self, other: 'Nt') -> 'Snv':
         return Snv(self, other)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: 'Nt') -> bool:
         return self._nt == other._nt
 
     def __len__(self) -> int:
@@ -108,13 +104,13 @@ class Snv(object):
 
         """
         if context is None:
-            self._context = self.ref
+            self._context = CONTEXT_TYPE(self.ref)
             return None
 
         if len(context) % 2 != 1:
-            raise contextError(f'Context must be of odd length: {context}')
+            raise ValueError(f'Context must be of odd length: {context}')
         if context[int(len(context) / 2)] != str(self.ref):
-            raise contextError(
+            raise ValueError(
                 f'Middle of context must equal ref: '
                 f'{context[int(len(context) / 2)]} != {self.ref}')
 
@@ -135,6 +131,14 @@ class Snv(object):
         )
 
     @property
+    def lseq(self) -> str:
+        return self.context[0: int((len(self.context) - 1) / 2)]
+
+    @property
+    def rseq(self) -> str:
+        return self.context[int((len(self.context) - 1) / 2) + 1:]
+
+    @property
     def snv_label(self):
         return '>'.join(map(str, [self.ref, self.alt]))
 
@@ -151,31 +155,31 @@ class Snv(object):
         self.locus = locus
         return self
 
+    def complement(self) -> 'Snv':
+        return self.copy(
+            ref=self.ref.complement(),
+            alt=self.alt.complement(),
+            context=complement(self.context)
+        )
+
+    def reverse_complement(self) -> 'Snv':
+        return self.copy(
+            ref=self.ref.complement(),
+            alt=self.alt.complement(),
+            context=reverse_complement(self.context)
+        )
+
     def within(self, context: Optional[CONTEXT_TYPE]) -> 'Snv':
         self.context = context
         return self
 
     def with_purine_ref(self) -> 'Snv':
         """Return this Snv with its reference as a purine."""
-        if self.ref.is_pyrimidine:
-            return self.copy(
-                ref=self.ref.complement(),
-                alt=self.alt.complement(),
-                context=reverse_complement(self.context)
-            )
-        else:
-            return self
+        return self.reverse_complement() if self.ref.is_pyrimidine else self
 
     def with_pyrimidine_ref(self) -> 'Snv':
         """Return this Snv with its reference as a pyrimidine."""
-        if self.ref.is_purine:
-            return self.copy(
-                ref=self.ref.complement(),
-                alt=self.alt.complement(),
-                context=reverse_complement(self.context)
-            )
-        else:
-            return self
+        return self.reverse_complement() if self.ref.is_purine else self
 
     def set_context_from_fasta_locus(
         self,
@@ -212,7 +216,7 @@ class Snv(object):
         self.context = context
         return context
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: 'Snv') -> bool:
         return (
             self.ref == other.ref and
             self.alt == other.alt and
@@ -234,9 +238,7 @@ class Snv(object):
         )
 
     def __str__(self) -> str:
-        c_left = self.context[0: int((len(self.context) - 1) / 2)]
-        c_right = self.context[int((len(self.context) - 1) / 2) + 1:]
-        return f'{c_left}[{self.ref}→{self.alt}]{c_right}'
+        return f'{self.lseq}[{self.ref}→{self.alt}]{self.rseq}'
 
 
 class Spectrum(object):
@@ -252,7 +254,13 @@ class Spectrum(object):
         self.counts: Mapping[Snv, float] = {}
         self.weights: Mapping[Snv, float] = {}
 
-        for ref, alt in permutations(map(Nt, IUPAC_MAPPING), 2):
+        # Reverse the order of a `Spectrum` built with purine notation.
+        if notation.value == 2:
+            codes = reversed(list(NT_MAPPING.keys()))
+        else:
+            codes = list(NT_MAPPING.keys())
+
+        for ref, alt in permutations(map(Nt, codes), 2):
             if (
                 ref.is_purine and notation.value == 1 or
                 ref.is_pyrimidine and notation.value == 2
@@ -293,7 +301,7 @@ class Spectrum(object):
     def weights_as_array(self) -> np.array:
         return np.array(list(self.weights.values()))
 
-    def split_by_reference(self) -> Tuple['Spectrum', 'Spectrum']:
+    def split_by_notation(self) -> Tuple['Spectrum', 'Spectrum']:
         if self.notation.value != 0:
             raise TypeError('`Spectrum` notation must be `Notation.none`')
 
@@ -317,7 +325,7 @@ class Spectrum(object):
         iterable: Iterable,
         k: int=1,
         notation: Notation=Notation.none,
-    ):
+    ) -> 'Spectrum':
         cls = cls(k=k, notation=notation)
         iterable = list(iterable)  # Cast to list
 
@@ -328,16 +336,16 @@ class Spectrum(object):
             cls[snv] = count
         return cls
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Tuple[Snv, Union[float, int]], None, None]:
         yield from self.counts.items()
 
     def __len__(self) -> int:
         return len(self.counts)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Union[float, int]:
         return self.counts[key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         if not isinstance(key, Snv):
             raise TypeError(f'Key must be of type `Snv`: {key}')
         elif not isinstance(value, (int, float)):

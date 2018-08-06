@@ -13,7 +13,7 @@ from skbio import DNA
 
 __all__ = [
     'CONTEXT_TYPE',
-    'IUPAC_MAPPING',
+    'NT_MAPPING',
     'PURINES',
     'PYRIMIDINES',
     'SNV_COLOR',
@@ -27,7 +27,7 @@ __all__ = [
 
 CONTEXT_TYPE = str
 
-IUPAC_MAPPING: Mapping[str, str] = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+NT_MAPPING: Mapping[str, str] = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 
 PURINES: Set[str] = ('A', 'G')
 PYRIMIDINES: Set[str] = ('C', 'T')
@@ -65,7 +65,7 @@ def dna_kmers(k: int=3) -> Generator[str, None, None]:
         64
 
     """
-    for parts in product(sorted(IUPAC_MAPPING), repeat=k):
+    for parts in product(sorted(NT_MAPPING), repeat=k):
         yield ''.join(parts)
 
 
