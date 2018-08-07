@@ -9,10 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://travis-ci.org/clintval/snv-spectrum"><img src="https://travis-ci.org/clintval/snv-spectrum.svg?branch=master"></img></a>
-  <a href="https://codecov.io/gh/clintval/snv-spectrum"><img src="https://codecov.io/gh/clintval/snv-spectrum/branch/master/graph/badge.svg"></img></a>
   <a href="https://badge.fury.io/py/snv_spectrum"><img src="https://badge.fury.io/py/snv_spectrum.svg" alt="PyPI version"></img></a>
+  <a href="https://travis-ci.org/clintval/snv-spectrum"><img src="https://travis-ci.org/clintval/snv-spectrum.svg?branch=master"></img></a>
+  <a href="http://snv-spectrum.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/snv-spectrum/badge/?version=latest"></img></a>
+  <a href="https://codecov.io/gh/clintval/snv-spectrum"><img src="https://codecov.io/gh/clintval/snv-spectrum/branch/master/graph/badge.svg"></img></a>
   <a href="https://codeclimate.com/github/clintval/snv-spectrum/maintainability"><img src="https://api.codeclimate.com/v1/badges/7f6ce7780716a92c40b8/maintainability"></img></a>
+  <a href="http://mypy-lang.org/"><img src="http://www.mypy-lang.org/static/mypy_badge.svg"></img></a>
   <a href="https://github.com/clintval/snv-spectrum/blob/master/LICENSE"><img src="https://img.shields.io/pypi/l/snv-spectrum.svg"></img></a>
 </p>
 
