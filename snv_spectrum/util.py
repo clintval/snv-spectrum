@@ -16,7 +16,7 @@ __all__ = [
     'NT_MAPPING',
     'PURINES',
     'PYRIMIDINES',
-    'SNV_COLOR',
+    'STRATTON_SNV_COLOR',
     'LONGFORM_LABEL',
     'COSMIC_SIGNATURE_URL',
     'dna_kmers',
@@ -32,11 +32,17 @@ NT_MAPPING: Mapping[str, str] = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 PURINES: Set[str] = ('A', 'G')
 PYRIMIDINES: Set[str] = ('C', 'T')
 
-SNV_COLOR: Mapping[str, str] = {
+STRATTON_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#EDBFC2', 'A→G': '#97D54C', 'A→T': '#CBC9C8',
     'C→A': '#52C3F1', 'C→G': '#231F20', 'C→T': '#E62223',
     'G→A': '#E62223', 'G→C': '#231F20', 'G→T': '#52C3F1',
     'T→A': '#CBC9C8', 'T→C': '#97D54C', 'T→G': '#EDBFC2'}
+
+DEFAULT_SNV_COLOR: Mapping[str, str] = {
+    'A→C': '#D53E4F', 'A→G': '#FC8D59', 'A→T': '#FEE08B',
+    'C→A': '#3288BD', 'C→G': '#99D594', 'C→T': '#E6F598',
+    'G→A': '#E6F598', 'G→C': '#99D594', 'G→T': '#3288BD',
+    'T→A': '#FEE08B', 'T→C': '#FC8D59', 'T→G': '#D53E4F'}
 
 LONGFORM_LABEL: Mapping[str, str] = {
     'A→C': 'A:T→C:G', 'A→G': 'A:T→G:C', 'A→T': 'A:T→T:A',

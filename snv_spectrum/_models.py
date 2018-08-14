@@ -12,7 +12,8 @@ from pyfaidx import Fasta
 
 from snv_spectrum.util import dna_kmers
 from snv_spectrum.util import NT_MAPPING, CONTEXT_TYPE
-from snv_spectrum.util import PURINES, PYRIMIDINES, SNV_COLOR
+from snv_spectrum.util import PURINES, PYRIMIDINES
+from snv_spectrum.util import DEFAULT_SNV_COLOR, STRATTON_SNV_COLOR
 
 __all__ = [
     'Notation',
@@ -34,7 +35,7 @@ class Nt(object):
         nt: Optional[str]='N'
     ) -> None:
         if nt not in NT_MAPPING:
-            raise ValueError(f'"{nt}" not a valid IUPAC code')
+            raise ValueError(f'{nt.__repr__()} not a valid IUPAC code')
         self._nt = nt.upper()
 
     def complement(self) -> 'Nt':
@@ -81,14 +82,24 @@ class Snv(object):
     ) -> None:
         if ref == alt:
             raise ValueError('`ref` and `alt` cannot be the same')
+        if not isinstance(ref, Nt) or not isinstance(ref, Nt):
+            raise TypeError('`ref` and `alt` must be of type `Nt`')
+        if locus and not isinstance(locus, str):
+            raise TypeError('`locus` must be of type `str`')
+        if context and not isinstance(context, CONTEXT_TYPE):
+            raise TypeError('`context` must be of type ...')
         self.ref = ref
         self.alt = alt
         self.context = context
         self.locus = locus
 
     @property
-    def color(self) -> str:
-        return SNV_COLOR[f'{self.ref}→{self.alt}']
+    def default_color(self) -> str:
+        return DEFAULT_SNV_COLOR[f'{self.ref}→{self.alt}']
+
+    @property
+    def stratton_color(self) -> str:
+        return STRATTON_SNV_COLOR[f'{self.ref}→{self.alt}']
 
     @property
     def context(self) -> CONTEXT_TYPE:
@@ -181,7 +192,7 @@ class Snv(object):
         """Return this Snv with its reference as a pyrimidine."""
         return self.reverse_complement() if self.ref.is_purine else self
 
-    def set_context_from_fasta_locus(
+    def set_context_from_fasta(
         self,
         infile: Path,
         contig: str,
@@ -190,15 +201,16 @@ class Snv(object):
     ):
         """Set the context by looking up a genomic loci from a FASTA.
 
-        The length of the context must be odd so the context can be symmetrical
-        in length about the the target position.
-
-        Args
-            infile: Filepath location to the FASTA file (preferrably indexed).
-            contig: The contig or chromosome name for the given locus.
-            position: The 0-based position in the chromosome that the context
-                will be centered on.
+        Args:
+            infile: FASTA filepath.
+            contig: The contig name with containing the locus.
+            position: The 0-based contig position that the Snv is centered on.
             k: The length of the context, must be positive and odd.
+
+        Notes:
+            - The FASTA file does not need to be indexed.
+            - The length of the context must be odd so the context can be
+                symmetrical in length about the the target position.
 
         """
         reference = Fasta(str(infile), sequence_always_upper=True)
