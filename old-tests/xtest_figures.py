@@ -4,8 +4,8 @@ from nose.tools import assert_raises
 
 from unittest import TestCase
 
-from snv_spectrum import *  # Test import of __all__
-from snv_spectrum.figures import *  # Test import of __all__
+from snvkit import *  # Test import of __all__
+from snvkit.figures import *  # Test import of __all__
 
 # Will need to follow instructions here for easy image comparison
 # http://www.davidketcheson.info/2015/01/13/using_matplotlib_image_comparison.html
@@ -36,7 +36,8 @@ class TestPlotSpectrum(TestCase):
             ValueError,
             plot_spectrum,
             Spectrum(k=3, reference_notation='pyrimidine'),
-            kind='boxplot')
+            kind='boxplot',
+        )
 
 
 class TestTiTv(TestCase):

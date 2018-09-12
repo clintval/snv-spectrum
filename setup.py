@@ -1,50 +1,26 @@
-import io
+import setuptools
 
-from setuptools import find_packages, setup
+from pathlib import Path
+from setuptools import find_packages
 
-with io.open('README.md', encoding='utf-8') as f:
-    long_description = f.read()
+PACKAGE = 'nucleic'
+VERSION = '0.5.0'
 
-__version__ = '0.3.0'
-
-DOWNLOAD_URL = 'https://github.com/clintval/snv-spectrum/archive/v{}.tar.gz'
-
-KEYWORDS = [
-    'bioinformatics',
-    'mutation',
-    'signature',
-    'spectra',
-    'transition',
-    'transversion']
-
-setup(
-    name='snv_spectrum',
-    packages=find_packages(),
-    version=__version__,
-    description='A Python 3.6 library for plotting mutational spectra.',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
+setuptools.setup(
+    name='nucleic',
+    version=VERSION,
     author='clintval',
     author_email='valentine.clint@gmail.com',
-    url='https://github.com/clintval/snv-spectrum',
-    download_url=DOWNLOAD_URL.format(__version__),
-    install_requires=[
-        'biopython',
-        'matplotlib',
-        'mpl_helpers',
-        'numpy',
-        'palettable',
-        'pyfaidx'
-    ],
-    extras_require={
-        'ci': ['nose', 'codecov'],
-        'cluster-ready': ['fastcluster', 'scipy', 'polo'],
-    },
+    description='A Python 3.6 library for plotting mutational spectra.',
+    url=f'https://github.com/clintval/{PACKAGE}',
+    download_url=f'https://github.com/{PACKAGE}/archive/v{VERSION}.tar.gz',
+    long_description=Path('README.md').read_text(),
+    long_description_content_type='text/markdown',
     license='MIT',
-    zip_safe=True,
-    keywords=(
-        'signature mutation transition transversion spectra bioinformatics'
-    ),
+    zip_safe=False,
+    packages=[PACKAGE],
+    install_requires=['biopython', 'matplotlib', 'mpl_helpers', 'numpy', 'palettable', 'pyfaidx'],
+    keywords='signature mutation transition transversion spectra bioinformatics',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -52,5 +28,10 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
         'Programming Language :: Python :: 3.6',
-    ]
+        'Programming Language :: Python :: 3.7',
+    ],
+    project_urls={
+        'Documentation': f'https://{PACKAGE}.readthedocs.io',
+        'Issue-Tracker': f'https://github.com/clintval/{PACKAGE}/issues',
+    },
 )

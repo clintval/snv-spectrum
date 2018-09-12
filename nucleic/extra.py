@@ -1,4 +1,4 @@
-from snv_spectrum import Nt
+from nucleic import Nt
 
 __all__ = []
 

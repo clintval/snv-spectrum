@@ -1,34 +1,12 @@
-sudo: false
-
 language: python
-
+cache: pip
 python:
   - 3.6
-  - 3.7-dev
-  - nightly
-
 install:
-  - pip install '.[ci]'
-
+  - pip install codecov tox-travis
 script:
-  - |
-    nosetests \
-      --verbosity=2 \
-      --ignore-files '^\.'\
-      --ignore-files '^setup\.py$' \
-      --with-doctest \
-      --with-coverage \
-      --cover-package=snv_spectrum \
-      --cover-xml \
-      --where .
-
+  - tox
 after_success:
   - codecov
-
 notifications:
   email: false
-
-before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3
