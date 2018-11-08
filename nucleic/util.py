@@ -37,7 +37,7 @@ STRATTON_SNV_COLOR: Mapping[str, str] = {
     'T→A': '#CBC9C8',
     'T→C': '#97D54C',
     'T→G': '#EDBFC2',
-}   
+}
 
 DEFAULT_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#D53E4F',

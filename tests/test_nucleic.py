@@ -219,7 +219,7 @@ class TestSnv(object):
     )
     def test_snv__repr__(self, left, right, context):
         snv = left.to(right).within(context)
-        assert snv.__repr__() == f'Snv(ref={left}, alt={right}, context="{context}")'
+        assert snv.__repr__() == f'Snv(ref="{left}", alt="{right}", context="{context}")'
 
     @pytest.mark.parametrize(
         'left,right,context,expected',

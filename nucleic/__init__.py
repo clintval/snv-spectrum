@@ -21,12 +21,16 @@ class Notation(Enum):
 
 
 class Nt(object):
-    """A single nucleotide such as:
+    """A single nucleotide, such as:
 
-    - `Adenine <https://en.wikipedia.org/wiki/Adenine>`_
-    - `Cytosine <https://en.wikipedia.org/wiki/Cytosine>`_
-    - `Guanine <https://en.wikipedia.org/wiki/Guanine>`_
-    - `Thymine <https://en.wikipedia.org/wiki/Thymine>`_
+    ============ ==================================================== ==========
+    String        Residue                                             Class
+    ============ ==================================================== ==========
+    :class:`A`   `Adenine <https://en.wikipedia.org/wiki/Adenine>`_   Purine
+    :class:`C`   `Cytosine <https://en.wikipedia.org/wiki/Cytosine>`_ Pyrimidine
+    :class:`G`   `Guanine <https://en.wikipedia.org/wiki/Guanine>`_   Purine
+    :class:`T`   `Thymine <https://en.wikipedia.org/wiki/Thymine>`_   Pyrimidine
+    ============ ==================================================== ==========
 
     Examples:
         >>> nt = Nt("A")
@@ -34,6 +38,8 @@ class Nt(object):
         True
         >>> nt.complement()
         Nt("T")
+        >>> Nt("T").to("A")
+        Snv(ref="T", alt="A", context="T")
 
     """
 
@@ -43,16 +49,19 @@ class Nt(object):
         self._nt = str(nt)
 
     def complement(self) -> 'Nt':
-        """Return """
+        """Return the complement nucleotide (:class:`Nt`)."""
         return Nt(IUPAC_MAPPING[self._nt])
 
     def is_purine(self) -> bool:
+        """Return if this nucleotide is a purine."""
         return self._nt in ('A', 'G')
 
     def is_pyrimidine(self) -> bool:
+        """Return if this nucleotide is a pyrimdine."""
         return self._nt in ('C', 'T')
 
     def to(self, other: Union[str, 'Nt']) -> 'Snv':
+        """Create a single nucleotide variant (:class:`Snv`)."""
         if isinstance(other, str):
             other = Nt(other)
         return Snv(self, other)
@@ -112,7 +121,8 @@ class Snv(object):
         """Verify that the context is of odd length and its center base
         matches the reference.
 
-        context: The context of this Snv, defaults to reference.
+        Args:
+            context: The context of this :class:`Snv`, default to `ref`.
 
         """
         if context is None:
@@ -129,24 +139,36 @@ class Snv(object):
 
         self._context = context
 
+    def complement(self) -> 'Snv':
+        """Return the complement single nucleotide variant (:class:`Snv`)."""
+        return self.copy(
+            ref=self.ref.complement(), alt=self.alt.complement(), context=complement(self.context)
+        )
+
     def is_transition(self) -> bool:
+        """Return if this single nucleotide variant is a transition."""
         return (self.ref.is_pyrimidine() and self.alt.is_pyrimidine()) or (
             self.ref.is_purine() and self.alt.is_purine()
         )
 
     def is_transversion(self) -> bool:
+        """Return if this single nucleotide variant is a transversion."""
         return not self.is_transition()
 
     def lseq(self) -> str:
+        """Retrun the 5′ adjacent sequence to the single nucleotide variant."""
         return self.context[0 : int((len(self.context) - 1) / 2)]
 
     def rseq(self) -> str:
+        """Retrun the 3′ adjacent sequence to the single nucleotide variant."""
         return self.context[int((len(self.context) - 1) / 2) + 1 :]
 
     def snv_label(self) -> str:
+        """A pretty representation of the single nucleotide variant."""
         return '>'.join(map(str, [self.ref, self.alt]))
 
     def copy(self, **kwargs: Any) -> 'Snv':
+        """Make a deep copy of this :class:`Snv`."""
         kwargs = {} if kwargs is None else kwargs
         return Snv(
             ref=kwargs.pop('ref', self.ref),
@@ -159,12 +181,8 @@ class Snv(object):
         self.locus = locus
         return self
 
-    def complement(self) -> 'Snv':
-        return self.copy(
-            ref=self.ref.complement(), alt=self.alt.complement(), context=complement(self.context)
-        )
-
     def reverse_complement(self) -> 'Snv':
+        """Return the reverse complement of this single nucleotide variant (:class:`Snv`)."""
         return self.copy(
             ref=self.ref.complement(),
             alt=self.alt.complement(),
@@ -172,15 +190,16 @@ class Snv(object):
         )
 
     def within(self, context: str) -> 'Snv':
+        """Set the context of this :class:`Snv`."""
         self.context = context
         return self
 
     def with_purine_ref(self) -> 'Snv':
-        """Return this Snv with its reference as a purine."""
+        """Return this :class:`Snv` with its reference as a purine."""
         return self.reverse_complement() if self.ref.is_pyrimidine() else self
 
     def with_pyrimidine_ref(self) -> 'Snv':
-        """Return this Snv with its reference as a pyrimidine."""
+        """Return this :class:`Snv` with its reference as a pyrimidine."""
         return self.reverse_complement() if self.ref.is_purine() else self
 
     def set_context_from_fasta(self, infile: Path, contig: str, position: int, k: int = 3) -> str:
@@ -195,7 +214,7 @@ class Snv(object):
         Notes:
             - The FASTA file does not need to be indexed.
             - The length of the context must be odd so the context can be
-                symmetrical in length about the the target position.
+              symmetrical in length about the the target position.
 
         """
         reference = Fasta(str(infile), sequence_always_upper=True)
@@ -232,7 +251,7 @@ class Snv(object):
         # locus = "None" if self.locus is None else f'"{self.locus}"'
         return (
             f'{self.__class__.__qualname__}('
-            f'ref={self.ref}, alt={self.alt}, '
+            f'ref="{self.ref}", alt="{self.alt}", '
             f'context="{self.context}")'
         )
 
