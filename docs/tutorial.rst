@@ -11,7 +11,7 @@ The class :class:`Nt` represents an IUPAC valid code for a non-degenerate DNA nu
 .. code-block:: python
 
     >>> from nucleic import Nt
-    >>> Nt('A').is_purine
+    >>> Nt('A').is_purine()
     True
 
 SNV
@@ -48,7 +48,7 @@ A complete example showing the creation of a notation-normalized :class:`Snv` fr
 
     >>> ref, alt, context = Nt('A'), Nt('C'), 'TAG'
     >>> snv = ref.to(alt).within(context).with_pyrimidine_ref()
-    >>> snv.is_transversion
+    >>> snv.is_transversion()
     True
 
 Each :class:`Snv` has a color associated with it for a uniform color palette.

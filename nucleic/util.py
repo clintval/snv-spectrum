@@ -8,8 +8,7 @@ from itertools import product
 from typing import Generator, Mapping, Tuple
 
 __all__ = [
-    'CONTEXT_TYPE',
-    'NT_MAPPING',
+    'IUPAC_MAPPING',
     'PURINES',
     'PYRIMIDINES',
     'STRATTON_SNV_COLOR',
@@ -20,12 +19,10 @@ __all__ = [
 ]
 
 
-CONTEXT_TYPE = str
+IUPAC_MAPPING = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
 
-NT_MAPPING: Mapping[str, str] = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-
-PURINES: Tuple[str, ...] = ('A', 'G')
-PYRIMIDINES: Tuple[str, ...] = ('C', 'T')
+PURINES: Tuple[str, str] = ('A', 'G')
+PYRIMIDINES: Tuple[str, str] = ('C', 'T')
 
 STRATTON_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#EDBFC2',
@@ -40,7 +37,7 @@ STRATTON_SNV_COLOR: Mapping[str, str] = {
     'T→A': '#CBC9C8',
     'T→C': '#97D54C',
     'T→G': '#EDBFC2',
-}
+}   
 
 DEFAULT_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#D53E4F',
@@ -77,6 +74,15 @@ COSMIC_SIGNATURE_URL = (
 )
 
 
+def complement(seq: str) -> str:
+    translation_table = str.maketrans(IUPAC_MAPPING)
+    return seq.translate(translation_table)
+
+
+def reverse_complement(seq: str) -> str:
+    return complement(seq)[::-1]
+
+
 def dna_kmers(k: int = 3) -> Generator[str, None, None]:
     """Return the cartesian product of all DNA substrings of length k.
 
@@ -93,7 +99,7 @@ def dna_kmers(k: int = 3) -> Generator[str, None, None]:
         64
 
     """
-    for parts in product(sorted(NT_MAPPING), repeat=k):
+    for parts in product(sorted(IUPAC_MAPPING), repeat=k):
         yield ''.join(parts)
 
 

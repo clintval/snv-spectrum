@@ -1,19 +1,17 @@
 from enum import Enum
 from itertools import permutations
 from pathlib import Path
-from typing import Any, Generator, Iterable, List, Mapping, NewType, Optional, Tuple, Union
+from typing import Any, Generator, Iterable, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
 
-from Bio.Seq import complement
-from Bio.Seq import reverse_complement
 from pyfaidx import Fasta
 
-from nucleic.util import dna_kmers
-from nucleic.util import CONTEXT_TYPE
+from nucleic.util import dna_kmers, complement, reverse_complement
+from nucleic.util import IUPAC_MAPPING
 from nucleic.util import DEFAULT_SNV_COLOR, STRATTON_SNV_COLOR
 
-__all__ = ['Notation', 'Nt', 'Snv', 'Spectrum', 'IUPAC_MAPPING']
+__all__ = ['Notation', 'Nt', 'Snv', 'Spectrum']
 
 
 class Notation(Enum):
@@ -22,33 +20,37 @@ class Notation(Enum):
     purine: int = 2
 
 
-IupacCode = NewType('IupacCode', str)
-
-IUPAC_MAPPING: Mapping[IupacCode, IupacCode] = {
-    IupacCode('A'): IupacCode('T'),
-    IupacCode('C'): IupacCode('G'),
-    IupacCode('G'): IupacCode('C'),
-    IupacCode('T'): IupacCode('A'),
-}
-
-
 class Nt(object):
-    def __init__(self, nt: Union[str, IupacCode]) -> None:
+    """A single nucleotide such as:
+
+    - `Adenine <https://en.wikipedia.org/wiki/Adenine>`_
+    - `Cytosine <https://en.wikipedia.org/wiki/Cytosine>`_
+    - `Guanine <https://en.wikipedia.org/wiki/Guanine>`_
+    - `Thymine <https://en.wikipedia.org/wiki/Thymine>`_
+
+    Examples:
+        >>> nt = Nt("A")
+        >>> nt.is_purine()
+        True
+        >>> nt.complement()
+        Nt("T")
+
+    """
+
+    def __init__(self, nt: Union[str, 'Nt']) -> None:
         if nt not in IUPAC_MAPPING:
-            raise ValueError(f'{nt.__repr__()} not a valid IUPAC code')
-        self._nt = IupacCode(nt)
+            raise ValueError(f'{nt} not a valid IUPAC code')
+        self._nt = str(nt)
 
     def complement(self) -> 'Nt':
-        # TODO: Use complement from skbio?
-        return Nt(complement(self._nt))
+        """Return """
+        return Nt(IUPAC_MAPPING[self._nt])
 
-    @property
     def is_purine(self) -> bool:
-        return self in (Nt('A'), Nt('G'))
+        return self._nt in ('A', 'G')
 
-    @property
     def is_pyrimidine(self) -> bool:
-        return self in (Nt('C'), Nt('T'))
+        return self._nt in ('C', 'T')
 
     def to(self, other: Union[str, 'Nt']) -> 'Snv':
         if isinstance(other, str):
@@ -75,7 +77,7 @@ class Nt(object):
 
 class Snv(object):
     def __init__(
-        self, ref: Nt, alt: Nt, context: Optional[CONTEXT_TYPE] = None, locus: Optional[str] = None
+        self, ref: Nt, alt: Nt, context: Optional[str] = None, locus: Optional[str] = None
     ) -> None:
         if not isinstance(ref, Nt) or not isinstance(alt, Nt):
             raise TypeError('`ref` and `alt` must be of type `Nt`')
@@ -83,14 +85,14 @@ class Snv(object):
             raise ValueError('`ref` and `alt` cannot be the same')
         if locus and not isinstance(locus, str):
             raise TypeError('`locus` must be of type `str`')
-        if context and not isinstance(context, CONTEXT_TYPE):
+        if context and not isinstance(context, str):
             raise TypeError('`context` must be of type ...')
         self.ref = ref
         self.alt = alt
         self.context = context
         self.locus = locus
         self.counts = Mapping[Snv, float]
-        self.weights = Mapping[CONTEXT_TYPE, float]
+        self.weights = Mapping[str, float]
 
     @property
     def default_color(self) -> str:
@@ -101,12 +103,12 @@ class Snv(object):
         return STRATTON_SNV_COLOR[f'{self.ref}→{self.alt}']
 
     @property
-    def context(self) -> CONTEXT_TYPE:
+    def context(self) -> str:
         """Return the context of this Snv."""
         return self._context
 
     @context.setter
-    def context(self, context: Optional[CONTEXT_TYPE]) -> None:
+    def context(self, context: Optional[str]) -> None:
         """Verify that the context is of odd length and its center base
         matches the reference.
 
@@ -114,7 +116,7 @@ class Snv(object):
 
         """
         if context is None:
-            self._context = CONTEXT_TYPE(self.ref)
+            self._context = str(str(self.ref))
             return None
 
         if len(context) % 2 != 1:
@@ -127,27 +129,20 @@ class Snv(object):
 
         self._context = context
 
-    @property
     def is_transition(self) -> bool:
-        return (self.ref.is_pyrimidine and self.alt.is_pyrimidine) or (
-            self.ref.is_purine and self.alt.is_purine
+        return (self.ref.is_pyrimidine() and self.alt.is_pyrimidine()) or (
+            self.ref.is_purine() and self.alt.is_purine()
         )
 
-    @property
     def is_transversion(self) -> bool:
-        return (self.ref.is_pyrimidine and self.alt.is_purine) or (
-            self.ref.is_purine and self.alt.is_pyrimidine
-        )
+        return not self.is_transition()
 
-    @property
     def lseq(self) -> str:
         return self.context[0 : int((len(self.context) - 1) / 2)]
 
-    @property
     def rseq(self) -> str:
         return self.context[int((len(self.context) - 1) / 2) + 1 :]
 
-    @property
     def snv_label(self) -> str:
         return '>'.join(map(str, [self.ref, self.alt]))
 
@@ -176,21 +171,19 @@ class Snv(object):
             context=reverse_complement(self.context),
         )
 
-    def within(self, context: CONTEXT_TYPE) -> 'Snv':
+    def within(self, context: str) -> 'Snv':
         self.context = context
         return self
 
     def with_purine_ref(self) -> 'Snv':
         """Return this Snv with its reference as a purine."""
-        return self.reverse_complement() if self.ref.is_pyrimidine else self
+        return self.reverse_complement() if self.ref.is_pyrimidine() else self
 
     def with_pyrimidine_ref(self) -> 'Snv':
         """Return this Snv with its reference as a pyrimidine."""
-        return self.reverse_complement() if self.ref.is_purine else self
+        return self.reverse_complement() if self.ref.is_purine() else self
 
-    def set_context_from_fasta(
-        self, infile: Path, contig: str, position: int, k: int = 3
-    ) -> CONTEXT_TYPE:
+    def set_context_from_fasta(self, infile: Path, contig: str, position: int, k: int = 3) -> str:
         """Set the context by looking up a genomic loci from a FASTA.
 
         Args:
@@ -244,7 +237,7 @@ class Snv(object):
         )
 
     def __str__(self) -> str:
-        return f'{self.lseq}[{self.ref}→{self.alt}]{self.rseq}'
+        return f'{self.lseq()}[{self.ref}→{self.alt}]{self.rseq()   }'
 
 
 class Spectrum(object):
@@ -258,7 +251,7 @@ class Spectrum(object):
         self.notation = notation
 
         self.counts: Mapping[Snv, float] = {}
-        self.weights: Mapping[CONTEXT_TYPE, float] = {}
+        self.weights: Mapping[str, float] = {}
 
         # Reverse the order of a `Spectrum` built with purine notation.
         if notation.value == 2:
@@ -267,7 +260,12 @@ class Spectrum(object):
             codes = list(IUPAC_MAPPING.keys())
 
         for ref, alt in permutations(map(Nt, codes), 2):
-            if ref.is_purine and notation.value == 1 or ref.is_pyrimidine and notation.value == 2:
+            if (
+                ref.is_purine()
+                and notation.value == 1
+                or ref.is_pyrimidine()
+                and notation.value == 2
+            ):
                 continue
             for context in filter(lambda kmer: kmer[int((k - 1) / 2)] == str(ref), dna_kmers(k)):
                 snv = ref.to(alt).within(context)
@@ -275,7 +273,7 @@ class Spectrum(object):
                 self.weights[snv.context] = 1
 
     @property
-    def contexts(self) -> List[CONTEXT_TYPE]:
+    def contexts(self) -> List[str]:
         return [snv.context for snv in self.counts]
 
     @property
@@ -313,7 +311,7 @@ class Spectrum(object):
             if snv.ref.is_purine:
                 spectrum_pu.counts[snv] = count  # type: ignore
                 spectrum_pu.weights[snv.context] = self.weights[snv.context]  # type: ignore
-            elif snv.ref.is_pyrimidine:
+            elif snv.ref.is_pyrimidine():
                 spectrum_py.counts[snv] = count  # type: ignore
                 spectrum_py.weights[snv.context] = self.weights[snv.context]  # type: ignore
 

@@ -25,13 +25,13 @@ class TestNt(object):
 
     @pytest.mark.parametrize('nt', PURINES)
     def test_nt_is_purine(self, nt):
-        assert Nt(nt).is_purine
-        assert not Nt(nt).is_pyrimidine
+        assert Nt(nt).is_purine()
+        assert not Nt(nt).is_pyrimidine()
 
     @pytest.mark.parametrize('nt', PYRIMIDINES)
     def test_nt_is_pyrimidine(self, nt):
-        assert Nt(nt).is_pyrimidine
-        assert not Nt(nt).is_purine
+        assert Nt(nt).is_pyrimidine()
+        assert not Nt(nt).is_purine()
 
     @pytest.mark.parametrize('left', map(Nt, 'ACGT'))
     @pytest.mark.parametrize('right', map(Nt, 'ACGT'))
@@ -120,14 +120,14 @@ class TestSnv(object):
         if left == right:
             return
         snv = left.to(right)
-        if snv.ref.is_purine and snv.alt.is_purine:
-            assert snv.is_transition
-        if snv.ref.is_pyrimidine and snv.alt.is_pyrimidine:
-            assert snv.is_transition
-        if snv.ref.is_purine and snv.alt.is_pyrimidine:
-            assert snv.is_transversion
-        if snv.ref.is_pyrimidine and snv.alt.is_purine:
-            assert snv.is_transversion
+        if snv.ref.is_purine() and snv.alt.is_purine():
+            assert snv.is_transition()
+        if snv.ref.is_pyrimidine() and snv.alt.is_pyrimidine():
+            assert snv.is_transition()
+        if snv.ref.is_purine() and snv.alt.is_pyrimidine():
+            assert snv.is_transversion()
+        if snv.ref.is_pyrimidine() and snv.alt.is_purine():
+            assert snv.is_transversion()
 
     @pytest.mark.parametrize('left', map(Nt, (PURINES + PYRIMIDINES)))
     @pytest.mark.parametrize('right', map(Nt, (PURINES + PYRIMIDINES)))
@@ -140,12 +140,12 @@ class TestSnv(object):
             return
         context = lseq + str(left) + rseq
         snv = Snv(left, right).within(context)
-        assert snv.lseq == lseq
-        assert snv.rseq == rseq
+        assert snv.lseq() == lseq
+        assert snv.rseq() == rseq
 
     @pytest.mark.parametrize('snv,result', [(Nt('A').to('C'), 'A>C'), (Nt('T').to('A'), 'T>A')])
     def test_snv_for_snv_label(self, snv, result):
-        assert snv.snv_label == result
+        assert snv.snv_label() == result
 
     def test_snv_at_locus(self):
         locus = 'chr1:200'
