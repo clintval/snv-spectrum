@@ -83,11 +83,11 @@ def plot_spectrum(
         ax_cbar.spines[spine].set_visible(False)
 
     xlim = (0 - bar_width, N - 1 + bar_width)
-    # labels = map(lambda _: _.replace('>', ' to '), spectrum.substitution_types)
+    labels = sorted(set([snv.label().replace('>', ' to ') for snv in spectrum.snvs]))
 
     ax_cbar.get_yaxis().set_visible(False)
     ax_cbar.set_xticks((np.linspace(*xlim, 7) + 16 / 2)[:6])
-    # ax_cbar.set_xticklabels(labels)
+    ax_cbar.set_xticklabels(labels)
 
     ax_main.set_xlim(xlim)
     ax_cbar.set_xlim(xlim)

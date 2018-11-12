@@ -163,9 +163,13 @@ class Snv(object):
         """Retrun the 3′ adjacent sequence to the single nucleotide variant."""
         return self.context[int((len(self.context) - 1) / 2) + 1 :]
 
-    def snv_label(self) -> str:
+    def label(self) -> str:
         """A pretty representation of the single nucleotide variant."""
         return '>'.join(map(str, [self.ref, self.alt]))
+
+    def snv_label(self) -> str:
+        """TODO: deprecate."""
+        return self.label()
 
     def copy(self, **kwargs: Any) -> 'Snv':
         """Make a deep copy of this :class:`Snv`."""

@@ -3,9 +3,9 @@ import io
 import urllib.request as request
 
 from collections import defaultdict
-from itertools import product
+from itertools import combinations, product
 
-from typing import Generator, Mapping, Tuple
+from typing import Generator, List, Mapping, Tuple
 
 __all__ = [
     'IUPAC_MAPPING',
@@ -16,6 +16,7 @@ __all__ = [
     'COSMIC_SIGNATURE_URL',
     'dna_kmers',
     'fetch_cosmic_signatures',
+    'hamming_circle',
 ]
 
 
@@ -101,6 +102,34 @@ def dna_kmers(k: int = 3) -> Generator[str, None, None]:
     """
     for parts in product(sorted(IUPAC_MAPPING), repeat=k):
         yield ''.join(parts)
+
+
+def hamming_circle(string: str, n: int, alphabet: List[str]) -> Generator[str, None, None]:
+    """Find all strings, of a given alphabet, with a hamming distance of `n`
+    away from a specific string.
+
+    Examples:
+        >>> sorted(hamming_circle('abc', n=0, alphabet='abc'))
+        ['abc']
+        >>> sorted(hamming_circle('abc', n=1, alphabet='abc'))
+        ['aac', 'aba', 'abb', 'acc', 'bbc', 'cbc']
+        >>> sorted(hamming_circle('aaa', n=2, alphabet='ab'))
+        ['abb', 'bab', 'bba']
+
+    """
+    for positions in combinations(range(len(string)), n):
+        for replacements in product(range(len(alphabet)), repeat=n):
+            skip = False
+            cousin = list(string)
+
+            for position, replacement in zip(positions, replacements):
+                if cousin[position] == alphabet[replacement]:
+                    skip = True
+                else:
+                    cousin[position] = alphabet[replacement]
+
+            if skip is False:
+                yield ''.join(cousin)
 
 
 def fetch_cosmic_signatures() -> Mapping:
