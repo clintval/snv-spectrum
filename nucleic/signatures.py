@@ -1,6 +1,6 @@
 from typing import List, Mapping, Optional
 
-from nucleic import Spectrum
+from nucleic import SnvSpectrum
 
 __all__ = [
     'assess_number_signatures',
@@ -11,7 +11,7 @@ __all__ = [
 
 
 def assess_number_signatures(
-    signatures: List[Spectrum],
+    signatures: List[SnvSpectrum],
     n: int,
     decomposition: str,
     decomposition_args: Optional[Mapping] = None,
@@ -22,7 +22,7 @@ def assess_number_signatures(
 
 
 def cluster_spectrum(
-    signatures: List[Spectrum],
+    signatures: List[SnvSpectrum],
     method: str = 'weighted',
     metric: str = 'cosine',
     optimal_order: bool = True,
@@ -31,11 +31,11 @@ def cluster_spectrum(
     raise NotImplementedError('Function placeholder.')
 
 
-def deconstruct_sigs(spectrum: Spectrum, signatures: List[Spectrum], method: str) -> None:
+def deconstruct_sigs(spectrum: SnvSpectrum, signatures: List[SnvSpectrum], method: str) -> None:
     """Deconstruct spectrums into known signatures."""
     raise NotImplementedError('Function placeholder.')
 
 
-def identify_signatures(signatures: List[Spectrum], n: int) -> None:
+def identify_signatures(signatures: List[SnvSpectrum], n: int) -> None:
     """Identifiy de novo signatures from spectrums."""
     raise NotImplementedError('Function placeholder.')

@@ -21,7 +21,7 @@ Creating Variant Alleles
 .. code-block:: python
 
     >>> Dna("A").to("C")
-    Snv(ref=Dna("A"), alt=Dna("C"), context=Dna("A"))
+    Variant(ref=Dna("A"), alt=Dna("C"), context=Dna("A"))
 
 By default, the context of the variant is assigned to the reference base, although a larger context can be set.
 The context must be symmetrical in length about the base substitution otherwise an error will be raised.
@@ -29,16 +29,16 @@ The context must be symmetrical in length about the base substitution otherwise 
 .. code-block:: python
 
     >>> Dna("A").to("C").within("TAG")
-    Snv(ref=Dna("A"), alt=Dna("C"), context=Dna("TAG"))
+    Variant(ref=Dna("A"), alt=Dna("C"), context=Dna("TAG"))
 
 Unless the chemical process for the base substitution is known, it is useful to represent all base substitutions in a canonical form, with either a purine or pyrimidine as the reference base.
 
 .. code-block:: python
 
     >>> Dna("A").to("C").within("TAG").with_pyrimidine_ref()
-    Snv(ref=Dna("T"), alt=Dna("G"), context=Dna("CTA"))
+    Variant(ref=Dna("T"), alt=Dna("G"), context=Dna("CTA"))
 
-A complete example showing the creation of a notation-normalized :class:`Snv` from strings only:
+A complete example showing the creation of a notation-normalized :class:`Variant` from strings only:
 
 .. code-block:: python
 
@@ -47,26 +47,26 @@ A complete example showing the creation of a notation-normalized :class:`Snv` fr
     >>> snv.is_transversion()
     True
 
-Each :class:`Snv` has a color associated with it for a uniform color palette.
+Each :class:`Variant` has a color associated with it for a uniform color palette.
 
 .. code-block:: python
 
     >>> snv.color_stratton()
     '#EDBFC2'
 
-SNV Spectrums
-~~~~~~~~~~~~~
+Single Nucleotide Variant Spectrums
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A :class:`Spectrum` can be initialized by specifying the size of the local context and the reference notation.
+A :class:`SnvSpectrum` can be initialized by specifying the size of the local context and the reference notation.
 
 .. code-block:: python
 
-    >>> from nucleic import Spectrum, Notation
-    >>> spectrum = Spectrum(k=3, notation=Notation.pyrimidine)
+    >>> from nucleic import SnvSpectrum, Notation
+    >>> spectrum = SnvSpectrum(k=3, notation=Notation.pyrimidine)
     >>> spectrum
-    Spectrum(k=3, notation=Notation.pyrimidine)
+    SnvSpectrum(k=3, notation=Notation.pyrimidine)
 
-Record observations by accessing the :class:`Spectrum` like a Python dictionary.
+Record observations by accessing the :class:`SnvSpectrum` like a Python dictionary.
 
 .. code-block:: python
 
@@ -74,12 +74,12 @@ Record observations by accessing the :class:`Spectrum` like a Python dictionary.
 
 *Note*: this is shorthand for ``spectrum.counts[snv] += 2``.
 
-If you have a vector of counts, or probabilities, then you can directly build a :class:`Spectrum` as long as the data is listed in the correct alphabetic order of the :class:`Spectrum` keys.
+If you have a vector of counts, or probabilities, then you can directly build a :class:`SnvSpectrum` as long as the data is listed in the correct alphabetic order of the :class:`SnvSpectrum` keys.
 
 .. code-block:: python
 
     >>> vector = [6, 5, 2, 2, 3, 8]
-    >>> # Spectrum.from_iterable(vector, k=1, notation=Notation.pyrimidine).counts
+    >>> # SnvSpectrum.from_iterable(vector, k=1, notation=Notation.pyrimidine).counts
 
 Working with Probability
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,10 +87,10 @@ Working with Probability
 Many spectra are produced from whole-genome or whole-exome sequencing experiments. Spectra must be normalized to the _kmer_ frequencies in the target study.
 Without normalization, no valid spectrum comparison can be made between data generated from different target territories or species.
 
-By default each :class:`Snv` is given a weight of 1 and calling :meth:`Spectrum.mass_as_array` will simply give the proportion of :class:`Snv` counts in the :class:`Spectrum`.
-After weights are set to the observed *k*mer counts or frequency of the target territory, calling :method:`Spectrum.mass` will compute a true normalized probability mass.
+By default each :class:`nucleic.Variant` is given a weight of 1 and calling :meth:`nucleic.SnvSpectrum.mass_as_array` will simply give the proportion of :class:`nucleic.Variant` counts in the :class:`nucleic.SnvSpectrum`.
+After weights are set to the observed *k*-mer counts or frequency of the target territory, calling :meth:`SnvSpectrum.mass` will compute a true normalized probability mass.
 
-All weights can be set with assignment _e.g._: `spectrum.context_weights["ACA"] = 23420`.
+All weights can be set with assignment *e.g.*: ``spectrum.context_weights["ACA"] = 23420``.
 
 .. code-block:: python
 
@@ -111,7 +111,7 @@ Download the published `COSMIC signatures <http://cancer.sanger.ac.uk/cosmic/sig
 Plotting Spectrums
 ~~~~~~~~~~~~~~~~~~
 
-Spectra with ``k=3`` in either ``pyrimidine`` or ``purine`` reference notation can be plotted using a style that was first used in Alexandrov *et. al.*  in 2013 (PMID: `23945592 <https://www.ncbi.nlm.nih.gov/pubmed/23945592>`_). Both :class:`nucleic.Snv` raw counts (``kind="count"``) or their probabilities (``kind="mass"``) can be plotted.
+Spectra with ``k=3`` in either ``pyrimidine`` or ``purine`` reference notation can be plotted using a style that was first used in Alexandrov *et. al.*  in 2013 (PMID: `23945592 <https://www.ncbi.nlm.nih.gov/pubmed/23945592>`_). Both :class:`nucleic.Variant` raw counts (``kind="count"``) or their probabilities (``kind="mass"``) can be plotted.
 
 The figure and axes are returned to allow for custom formatting.
 

@@ -8,10 +8,10 @@ Welcome to the ``nucleic`` Documentation!
 Features
 --------
 
-- Model single nucleotide variants and their local context with an elegant API
+- Model DNA and variant alleles within their local context using an elegant API
 - Combine single nucleotide variants into spectrums of mutagenesis
 - Fetch COSMIC signatures of mutation as well as other published signatures
-- SVG plotting functions for displaying patterns of mutagenesis
+- SVG plotting functions for displaying single nucleotide variant spectrums
 
 .. toctree::
    :maxdepth: 1

@@ -14,7 +14,7 @@ from nucleic.util import dna_kmers
 from nucleic.constants import DNA_IUPAC_NONDEGENERATE
 from nucleic.util import DEFAULT_SNV_COLOR, STRATTON_SNV_COLOR
 
-__all__ = ['Dna', 'Notation', 'Nt', 'Snv', 'Spectrum']
+__all__ = ['Dna', 'Notation', 'Nt', 'Variant', 'Snv', 'SnvSpectrum']
 
 
 class Notation(Enum):
@@ -42,7 +42,7 @@ class Dna(GrammaredSequence, NucleotideMixin):
         >>> dna.complement()
         Dna("T")
         >>> Dna("T").to("A")
-        Snv(ref=Dna("T"), alt=Dna("A"), context=Dna("T"))
+        Variant(ref=Dna("T"), alt=Dna("A"), context=Dna("T"))
 
     """
 
@@ -74,11 +74,11 @@ class Dna(GrammaredSequence, NucleotideMixin):
         """Return if this sequence is a pyrimdine."""
         return str(self) in ('C', 'T')
 
-    def to(self, other: Union[str, 'Dna']) -> 'Snv':
+    def to(self, other: Union[str, 'Dna']) -> 'Variant':
         """Create a variant allele."""
         if isinstance(other, str):
             other = Dna(other)
-        return Snv(self, other)
+        return Variant(self, other)
 
     def __hash__(self) -> int:
         return hash(repr(self))
@@ -98,7 +98,7 @@ def Nt(seq: Union[str, Dna]) -> Dna:
     return Dna(seq)
 
 
-class Snv(object):
+class Variant(object):
     def __init__(
         self, ref: Dna, alt: Dna, context: Optional[Dna] = None, locus: Optional[str] = None
     ) -> None:
@@ -114,7 +114,7 @@ class Snv(object):
         self.alt: Dna = alt
         self.context = context
         self.locus = locus
-        self.counts = Mapping[Snv, float]
+        self.counts = Mapping[Variant, float]
         self.weights = Mapping[str, float]
 
     def color_default(self) -> str:
@@ -179,7 +179,7 @@ class Snv(object):
             raise TypeError('`alt` must be of type `Dna`')
         self._alt = alt
 
-    def complement(self) -> 'Snv':
+    def complement(self) -> 'Variant':
         """Return the complement single nucleotide variant."""
         return self.copy(
             ref=self.ref.complement(), alt=self.alt.complement(), context=self.context.complement()
@@ -211,27 +211,27 @@ class Snv(object):
         """A pretty representation of the single nucleotide variant.
 
         Warning:
-            Will be deprecated in ``v0.7.0``. Use :meth:`Snv.label` instead.
+            Will be deprecated in ``v0.7.0``. Use :meth:`Variant.label` instead.
 
         """
         warnings.warn('This function will be deprecated in v0.7.0. Use `nucleic.Dna`.')
         return self.label()
 
-    def copy(self, **kwargs: Any) -> 'Snv':
+    def copy(self, **kwargs: Any) -> 'Variant':
         """Make a deep copy of this single nucleotide variant."""
         kwargs = {} if kwargs is None else kwargs
-        return Snv(
+        return Variant(
             ref=kwargs.pop('ref', self.ref),
             alt=kwargs.pop('alt', self.alt),
             context=kwargs.pop('context', self.context),
             locus=kwargs.pop('locus', self.locus),
         )
 
-    def at(self, locus: str) -> 'Snv':
+    def at(self, locus: str) -> 'Variant':
         self.locus = locus
         return self
 
-    def reverse_complement(self) -> 'Snv':
+    def reverse_complement(self) -> 'Variant':
         """Return the reverse complement of this single nucleotide variant."""
         return self.copy(
             ref=self.ref.reverse_complement(),
@@ -239,16 +239,16 @@ class Snv(object):
             context=self.context.reverse_complement(),
         )
 
-    def within(self, context: Union[str, Dna]) -> 'Snv':
+    def within(self, context: Union[str, Dna]) -> 'Variant':
         """Set the context of this single nucleotide variant."""
         self.context = Dna(context)
         return self
 
-    def with_purine_ref(self) -> 'Snv':
+    def with_purine_ref(self) -> 'Variant':
         """Return this single nucleotide variant with its reference as a purine."""
         return self.reverse_complement() if self.ref.is_pyrimidine() else self
 
-    def with_pyrimidine_ref(self) -> 'Snv':
+    def with_pyrimidine_ref(self) -> 'Variant':
         """Return this single nucleotide variant with its reference as a pyrimidine."""
         return self.reverse_complement() if self.ref.is_purine() else self
 
@@ -258,7 +258,7 @@ class Snv(object):
         Args:
             infile: FASTA filepath.
             contig: The contig name with containing the locus.
-            position: The 0-based contig position that the Snv is centered on.
+            position: The 0-based contig position that the Variant is centered on.
             k: The length of the context, must be positive and odd.
 
         Notes:
@@ -283,7 +283,7 @@ class Snv(object):
         return context
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Snv):
+        if not isinstance(other, Variant):
             return NotImplemented
         return (
             self.ref == other.ref
@@ -309,7 +309,30 @@ class Snv(object):
         return f'{self.lseq()}[{self.ref}→{self.alt}]{self.rseq()   }'
 
 
-class Spectrum(object):
+def Snv(ref: Dna, alt: Dna, context: Optional[Dna] = None) -> 'Variant':
+    """A single nucleotide variant of type :class:`Variant`.
+
+    Warning:
+        Will be deprecated in ``v0.7.0``. Use :class:`nucleic.Variant` instead.
+
+    """
+    warnings.warn('This function will be deprecated in v0.7.0. Use `nucleic.Variant`.')
+    return Variant(ref, alt, context)
+
+
+class IndelSpectrum(object):
+    """A spectrum of indel variants of various sizes.
+
+    Warning:
+        Not implemented.
+
+    """
+
+    def __init__(self) -> None:
+        raise NotImplementedError('Class placeholder.')
+
+
+class SnvSpectrum(object):
     def __init__(self, k: int = 1, notation: Notation = Notation.none) -> None:
         if not isinstance(k, int) and k % 2 != 1 and k > 0:
             raise TypeError('`k` must be a positive odd integer')
@@ -319,10 +342,10 @@ class Spectrum(object):
         self.k = k
         self.notation = notation
 
-        self.counts: Mapping[Snv, float] = {}
+        self.counts: Mapping[Variant, float] = {}
         self.weights: Mapping[str, float] = {}
 
-        # Reverse the order of a `Spectrum` built with purine notation.
+        # Reverse the order of a `SnvSpectrum` built with purine notation.
         if notation.value == 2:
             codes = list(reversed(DNA_IUPAC_NONDEGENERATE))
         else:
@@ -346,11 +369,11 @@ class Spectrum(object):
         return [snv.context for snv in self.counts]
 
     @property
-    def snvs(self) -> List[Snv]:
+    def snvs(self) -> List[Variant]:
         return [snv for snv in self.counts]
 
-    def mass(self) -> Mapping[Snv, float]:
-        def norm_count(snv: Snv) -> float:
+    def mass(self) -> Mapping[Variant, float]:
+        def norm_count(snv: Variant) -> float:
             return self.counts[snv] / self.weights[snv.context]
 
         proportions = {snv: norm_count(snv) for snv in self.counts}
@@ -369,12 +392,12 @@ class Spectrum(object):
     def weights_as_array(self) -> np.array:
         return np.array(list(self.weights.values()))
 
-    def split_by_notation(self) -> Tuple['Spectrum', 'Spectrum']:
+    def split_by_notation(self) -> Tuple['SnvSpectrum', 'SnvSpectrum']:
         if self.notation.value != 0:
-            raise TypeError('`Spectrum` notation must be `Notation.none`')
+            raise TypeError('`SnvSpectrum` notation must be `Notation.none`')
 
-        spectrum_pu = Spectrum(self.k, Notation.purine)
-        spectrum_py = Spectrum(self.k, Notation.pyrimidine)
+        spectrum_pu = SnvSpectrum(self.k, Notation.purine)
+        spectrum_py = SnvSpectrum(self.k, Notation.pyrimidine)
 
         for snv, count in self.counts.items():
             if snv.ref.is_purine:
@@ -389,34 +412,45 @@ class Spectrum(object):
     @classmethod
     def from_iterable(
         cls, iterable: Iterable, k: int = 1, notation: Notation = Notation.none
-    ) -> 'Spectrum':
+    ) -> 'SnvSpectrum':
         spectrum = cls(k=k, notation=notation)
         iterable = list(iterable)  # Cast to list
 
         if len(spectrum) != len(iterable):
-            raise ValueError('`iterable` not of `len(Spectrum())`')
+            raise ValueError('`iterable` not of `len(SnvSpectrum())`')
 
         for snv, count in zip(spectrum.counts.keys(), iterable):
             spectrum.counts[snv] = count  # type: ignore # pylint: disable=E1101
         return spectrum
 
-    def __iter__(self) -> Generator[Tuple[Snv, Union[float, int]], None, None]:
+    def __iter__(self) -> Generator[Tuple[Variant, Union[float, int]], None, None]:
         yield from self.counts.items()
 
     def __len__(self) -> int:
         return len(self.counts)
 
-    def __getitem__(self, key: Snv) -> float:
+    def __getitem__(self, key: Variant) -> float:
         return self.counts[key]
 
-    def __setitem__(self, key: Snv, value: float) -> None:
-        if not isinstance(key, Snv):
-            raise TypeError(f'Key must be of type `Snv`: {key}')
+    def __setitem__(self, key: Variant, value: float) -> None:
+        if not isinstance(key, Variant):
+            raise TypeError(f'Key must be of type `Variant`: {key}')
         elif not isinstance(value, (int, float)):
             raise TypeError(f'Value must be a number: {value}')
         elif key not in self.counts:
-            raise KeyError(f'Snv not found in `Spectrum.counts`: {key}')
+            raise KeyError(f'Variant not found in `SnvSpectrum.counts`: {key}')
         self.counts[key] = value  # type: ignore
 
     def __repr__(self) -> str:
         return f'{self.__class__.__qualname__}(' f'k={self.k}, ' f'notation={self.notation})'
+
+
+def Spectrum(k: int = 1, notation: Notation = Notation.none) -> SnvSpectrum:
+    """A spectrum of single nucleotide variants.
+
+    Warning:
+        Will be deprecated in ``v0.7.0``. Use :class:`nucleic.SnvSpectrum` instead.
+
+    """
+    warnings.warn('This function will be deprecated in v0.7.0. Use `nucleic.SnvSpectrum`.')
+    return SnvSpectrum(k, notation)

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from nucleic import Spectrum
+from nucleic import SnvSpectrum
 
 
 __all__ = ['plot_spectrum']
@@ -29,7 +29,7 @@ signature_cmap = {
 
 
 def plot_spectrum(
-    spectrum: Spectrum,
+    spectrum: SnvSpectrum,
     kind: str = 'density',
     bar_width: float = 0.8,
     patch_padding: float = 0.2,
@@ -39,12 +39,12 @@ def plot_spectrum(
     """Plot the spectrum of mutation."""
     N: int = 96
 
-    if not isinstance(spectrum, Spectrum):
-        raise ValueError('spectrum is not of class Spectrum')
+    if not isinstance(spectrum, SnvSpectrum):
+        raise ValueError('`spectrum` is not of class `SnvSpectrum`')
     elif len(spectrum) != N:
-        raise ValueError(f'spectrum is not of length {N}')
+        raise ValueError(f'`spectrum` is not of length {N}')
     elif kind not in ('count', 'density'):
-        raise ValueError('kind must be "count" or "density"')
+        raise ValueError('`kind` must be "count" or "density"')
 
     fig, (ax_main, ax_cbar) = plt.subplots(
         nrows=2,

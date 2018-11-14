@@ -1,6 +1,6 @@
 import pytest
 
-from nucleic import Dna, Snv, Spectrum
+from nucleic import Dna, Variant, Spectrum
 
 PURINES = ('A', 'G')
 PYRIMIDINES = ('C', 'T')
@@ -28,39 +28,39 @@ class TestDna(object):
     def test_nt_to(self, left, right):
         if left == right:
             return
-        assert left.to(right) == Snv(left, right)
-        assert left.to(str(right)) == Snv(left, right)
+        assert left.to(right) == Variant(left, right)
+        assert left.to(str(right)) == Variant(left, right)
 
     @pytest.mark.parametrize('nt', PURINES + PYRIMIDINES)
     def test_nt__repr__(self, nt):
         assert Dna(nt).__repr__() == f'Dna("{nt}")'
 
 
-class TestSnv(object):
-    """Unit tests for ``nucleic.Snv``."""
+class TestVariant(object):
+    """Unit tests for ``nucleic.Variant``."""
 
     def test_snv_illegal_init(self):
         left, right = Dna('C'), Dna('T')
         with pytest.raises(TypeError):
-            Snv(left, 'T')
+            Variant(left, 'T')
         with pytest.raises(ValueError):
-            Snv(left, left)
+            Variant(left, left)
         with pytest.raises(TypeError):
-            Snv(left, right, locus=2)
+            Variant(left, right, locus=2)
         with pytest.raises(TypeError):
-            Snv(left, right, context='C')
+            Variant(left, right, context='C')
 
     @pytest.mark.parametrize('nt', map(Dna, (PURINES + PYRIMIDINES)))
     def test_snv_illegal_init_equal_ref_and_alt(self, nt):
         with pytest.raises(ValueError):
-            Snv(nt, nt)
+            Variant(nt, nt)
 
     @pytest.mark.parametrize(
         'snv,color_default,color_stratton',
         [
-            [Snv(Dna('A'), Dna('C')), '#D53E4F', '#EDBFC2'],
-            [Snv(Dna('T'), Dna('G')), '#D53E4F', '#EDBFC2'],
-            [Snv(Dna('C'), Dna('A')), '#3288BD', '#52C3F1'],
+            [Variant(Dna('A'), Dna('C')), '#D53E4F', '#EDBFC2'],
+            [Variant(Dna('T'), Dna('G')), '#D53E4F', '#EDBFC2'],
+            [Variant(Dna('C'), Dna('A')), '#3288BD', '#52C3F1'],
         ],
     )
     def test_snv_color_spot_check(self, snv, color_default, color_stratton):
@@ -117,7 +117,7 @@ class TestSnv(object):
         if left == right:
             return
         context = Dna(lseq + str(left) + rseq)
-        snv = Snv(left, right).within(context)
+        snv = Variant(left, right).within(context)
         assert snv.lseq() == Dna(lseq)
         assert snv.rseq() == Dna(rseq)
 
@@ -207,4 +207,6 @@ class TestSnv(object):
     @pytest.mark.parametrize('left,right', [[Dna('T'), Dna('A')], [Dna('C'), Dna('G')]])
     def test_snv__repr__(self, left, right):
         snv = left.to(right)
-        assert snv.__repr__() == f'Snv(ref={repr(left)}, alt={repr(right)}, context={repr(left)})'
+        assert (
+            snv.__repr__() == f'Variant(ref={repr(left)}, alt={repr(right)}, context={repr(left)})'
+        )
