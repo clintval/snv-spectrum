@@ -1,7 +1,7 @@
 import pytest
 
-from nucleic import *
-from nucleic.util import *
+from nucleic import SnvSpectrum
+from nucleic.util import dna_kmers, fetch_cosmic_signatures
 
 
 class TestUtil(object):
@@ -17,4 +17,4 @@ class TestUtil(object):
 
         for key, value in cosmic_signatures.items():
             assert isinstance(key, str)
-            assert isinstance(value, Spectrum)
+            assert isinstance(value, SnvSpectrum)

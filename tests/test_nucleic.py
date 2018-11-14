@@ -123,7 +123,7 @@ class TestVariant(object):
 
     @pytest.mark.parametrize('snv,result', [(Dna('A').to('C'), 'A>C'), (Dna('T').to('A'), 'T>A')])
     def test_snv_for_snv_label(self, snv, result):
-        assert snv.snv_label() == result
+        assert snv.label() == result
 
     def test_snv_at_locus(self):
         locus = 'chr1:200'
