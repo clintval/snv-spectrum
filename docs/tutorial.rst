@@ -6,13 +6,13 @@ Tutorial
 Nucleotides
 ~~~~~~~~~~~
 
-The class :class:`Dna` is an IUPAC valid sequence of non-degenerate DNA nucleotides.
+The class :class:`DNA` is an IUPAC valid sequence of non-degenerate DNA nucleotides.
 For the purposes of the tutorial we will assume single nucleotide sequences.
 
 .. code-block:: python
 
-    >>> from nucleic import Dna
-    >>> Dna("A").is_purine()
+    >>> from nucleic import DNA
+    >>> DNA("A").is_purine()
     True
 
 Creating Variant Alleles
@@ -20,29 +20,29 @@ Creating Variant Alleles
 
 .. code-block:: python
 
-    >>> Dna("A").to("C")
-    Variant(ref=Dna("A"), alt=Dna("C"), context=Dna("A"))
+    >>> DNA("A").to("C")
+    Variant(ref=DNA("A"), alt=DNA("C"), context=DNA("A"))
 
 By default, the context of the variant is assigned to the reference base, although a larger context can be set.
 The context must be symmetrical in length about the base substitution otherwise an error will be raised.
 
 .. code-block:: python
 
-    >>> Dna("A").to("C").within("TAG")
-    Variant(ref=Dna("A"), alt=Dna("C"), context=Dna("TAG"))
+    >>> DNA("A").to("C").within("TAG")
+    Variant(ref=DNA("A"), alt=DNA("C"), context=DNA("TAG"))
 
 Unless the chemical process for the base substitution is known, it is useful to represent all base substitutions in a canonical form, with either a purine or pyrimidine as the reference base.
 
 .. code-block:: python
 
-    >>> Dna("A").to("C").within("TAG").with_pyrimidine_ref()
-    Variant(ref=Dna("T"), alt=Dna("G"), context=Dna("CTA"))
+    >>> DNA("A").to("C").within("TAG").with_pyrimidine_ref()
+    Variant(ref=DNA("T"), alt=DNA("G"), context=DNA("CTA"))
 
 A complete example showing the creation of a notation-normalized :class:`Variant` from strings only:
 
 .. code-block:: python
 
-    >>> ref, alt, context = Dna("A"), Dna("C"), Dna("TAG")
+    >>> ref, alt, context = DNA("A"), DNA("C"), DNA("TAG")
     >>> snv = ref.to(alt).within(context).with_pyrimidine_ref()
     >>> snv.is_transversion()
     True

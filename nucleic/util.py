@@ -122,9 +122,11 @@ def fetch_cosmic_signatures() -> Dict:
         signatures: The probability masses of the COSMIC signatures.
 
     """
-    from nucleic import Dna, SnvSpectrum, Notation
+    from nucleic import DNA, SnvSpectrum, Notation
 
-    all_signatures: defaultdict = defaultdict(lambda: SnvSpectrum(k=3, notation=Notation.pyrimidine))
+    all_signatures: defaultdict = defaultdict(
+        lambda: SnvSpectrum(k=3, notation=Notation.pyrimidine)
+    )
 
     with request.urlopen(COSMIC_SIGNATURE_URL) as handle:
         reader = csv.reader(io.TextIOWrapper(handle), delimiter='\t')
@@ -137,7 +139,7 @@ def fetch_cosmic_signatures() -> Dict:
             for title, point in zip(signature_titles, map(float, points)):
                 # Split the subtype to get reference and alternate
                 left, right = subtype.split('>')
-                snv = Dna(left).to(right).within(context)
+                snv = DNA(left).to(right).within(context)
                 all_signatures[title][snv] = point
 
     return dict(all_signatures)
