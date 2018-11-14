@@ -1,16 +1,13 @@
 import csv
 import io
 import urllib.request as request
-
 from collections import defaultdict
 from itertools import combinations, product
+from typing import Dict, Generator, List, Mapping, Tuple
 
-from typing import Generator, List, Mapping, Tuple
+from nucleic.constants import DNA_IUPAC_NONDEGENERATE
 
 __all__ = [
-    'IUPAC_MAPPING',
-    'PURINES',
-    'PYRIMIDINES',
     'STRATTON_SNV_COLOR',
     'LONGFORM_LABEL',
     'COSMIC_SIGNATURE_URL',
@@ -18,12 +15,6 @@ __all__ = [
     'fetch_cosmic_signatures',
     'hamming_circle',
 ]
-
-
-IUPAC_MAPPING = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-
-PURINES: Tuple[str, str] = ('A', 'G')
-PYRIMIDINES: Tuple[str, str] = ('C', 'T')
 
 STRATTON_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#EDBFC2',
@@ -75,38 +66,28 @@ COSMIC_SIGNATURE_URL = (
 )
 
 
-def complement(seq: str) -> str:
-    translation_table = str.maketrans(IUPAC_MAPPING)
-    return seq.translate(translation_table)
-
-
-def reverse_complement(seq: str) -> str:
-    return complement(seq)[::-1]
-
-
 def dna_kmers(k: int = 3) -> Generator[str, None, None]:
-    """Return the cartesian product of all DNA substrings of length k.
+    """Return the cartesian product of all DNA substrings of length `k`.
 
     Args:
         k: Length of of the DNA substring.
 
     Yields:
-        Cartesian product of all DNA substrings of length k.
+        Cartesian product of all DNA substrings of length `k`.
 
-    Examples
+    Examples:
         >>> list(dna_kmers(1))
         ['A', 'C', 'G', 'T']
         >>> len(list(dna_kmers(3)))
         64
 
     """
-    for parts in product(sorted(IUPAC_MAPPING), repeat=k):
+    for parts in product(sorted(DNA_IUPAC_NONDEGENERATE), repeat=k):
         yield ''.join(parts)
 
 
 def hamming_circle(string: str, n: int, alphabet: List[str]) -> Generator[str, None, None]:
-    """Find all strings, of a given alphabet, with a hamming distance of `n`
-    away from a specific string.
+    """Find strings, of a given alphabet, with a distance of `n` away from a string.
 
     Examples:
         >>> sorted(hamming_circle('abc', n=0, alphabet='abc'))
@@ -132,16 +113,16 @@ def hamming_circle(string: str, n: int, alphabet: List[str]) -> Generator[str, N
                 yield ''.join(cousin)
 
 
-def fetch_cosmic_signatures() -> Mapping:
-    """Fetch the COSMIC published signatures from:
+def fetch_cosmic_signatures() -> Dict:
+    """Fetch the COSMIC published signatures from the following URL.
 
         - https://cancer.sanger.ac.uk/cosmic
 
     Returns:
-        cosmic_signatures: The probability masses of the COSMIC signatures.
+        signatures: The probability masses of the COSMIC signatures.
 
     """
-    from nucleic import Nt, Spectrum, Notation
+    from nucleic import Dna, Spectrum, Notation
 
     all_signatures: defaultdict = defaultdict(lambda: Spectrum(k=3, notation=Notation.pyrimidine))
 
@@ -156,66 +137,10 @@ def fetch_cosmic_signatures() -> Mapping:
             for title, point in zip(signature_titles, map(float, points)):
                 # Split the subtype to get reference and alternate
                 left, right = subtype.split('>')
-                snv = Nt(left).to(right).within(context)
+                snv = Dna(left).to(right).within(context)
                 all_signatures[title][snv] = point
 
     return dict(all_signatures)
-
-
-# def kmer_frequencies_from_bed(
-#     bed_file: Path,
-#     reference_file: Path,
-#     k: int = 3,
-#     relative: bool = False,
-#     reverse_complement: bool = None,
-#     reference_notation: str = None,
-# ) -> Counter:
-#     """Count kmers in the sequences defined by intervals.
-
-#     TODO: Use an interval tree to merge as default.
-
-#     Args:
-#         bed_file: Path to the bed intervals.
-#         reference-file : Path to the reference genome.
-#         k: The length of the kmer.
-#         reverse_complement: To count on the reference or anti-reference strand.
-#         reference_notation: ...
-
-#     Returns:
-#         kmer_dict: Mapping of kmers and their counts.
-
-#     Note:
-#         This function makes no attempt to merge overlapping intervals into one!
-
-#     """
-#     from skbio import DNA
-
-#     if reverse_complement is not None and reference_notation is not None:
-#         raise ValueError('reverse complement and reference notation can not both be set.')
-#     kmer_dict = Counter()
-#     reference = Fasta(str(reference_file), sequence_always_upper=True)
-
-#     with open(bed_file) as handle:
-#         for line in handle:
-#             line = line.strip().split()
-#             chrom, start, end, *_ = line
-
-#             dna = DNA(str(reference[chrom][int(start) : int(end)]))
-#             dna = dna.reverse_complement() if reverse_complement else dna
-
-#             kmer_dict.update(dna.kmer_frequencies(k, relative=relative, overlap=True))
-
-#     new = Counter()
-
-#     for context, count in kmer_dict.items():
-#         middle_base = str(context[int((k - 1) / 2)])
-
-#         if (middle_base in PURINES and reference_notation == 'pyrimidine') or (
-#             middle_base in PYRIMIDINES and reference_notation == 'purine'
-#         ):
-#             context = DNA(context).reverse_complement()
-#         new[context] = count
-#     return new
 
 
 def equal_partition(string: str) -> Tuple[str, str]:

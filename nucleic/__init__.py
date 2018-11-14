@@ -1,17 +1,20 @@
+import warnings
 from enum import Enum
 from itertools import permutations
 from pathlib import Path
-from typing import Any, Generator, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Mapping, Optional, Set, Tuple, Union
 
 import numpy as np
-
 from pyfaidx import Fasta
+from skbio.util import classproperty
+from skbio.sequence._nucleotide_mixin import NucleotideMixin
+from skbio.sequence import GrammaredSequence
 
-from nucleic.util import dna_kmers, complement, reverse_complement
-from nucleic.util import IUPAC_MAPPING
+from nucleic.util import dna_kmers
+from nucleic.constants import DNA_IUPAC_NONDEGENERATE
 from nucleic.util import DEFAULT_SNV_COLOR, STRATTON_SNV_COLOR
 
-__all__ = ['Notation', 'Nt', 'Snv', 'Spectrum']
+__all__ = ['Dna', 'Notation', 'Nt', 'Snv', 'Spectrum']
 
 
 class Notation(Enum):
@@ -20,8 +23,8 @@ class Notation(Enum):
     purine: int = 2
 
 
-class Nt(object):
-    """A single nucleotide, such as:
+class Dna(GrammaredSequence, NucleotideMixin):
+    """Deoxyribonucleic acid composed of the following nucleotide sequences:
 
     ============ ==================================================== ==========
     String        Residue                                             Class
@@ -33,105 +36,118 @@ class Nt(object):
     ============ ==================================================== ==========
 
     Examples:
-        >>> nt = Nt("A")
-        >>> nt.is_purine()
+        >>> dna = Dna("A")
+        >>> dna.is_purine()
         True
-        >>> nt.complement()
-        Nt("T")
-        >>> Nt("T").to("A")
-        Snv(ref="T", alt="A", context="T")
+        >>> dna.complement()
+        Dna("T")
+        >>> Dna("T").to("A")
+        Snv(ref=Dna("T"), alt=Dna("A"), context=Dna("T"))
 
     """
 
-    def __init__(self, nt: Union[str, 'Nt']) -> None:
-        if nt not in IUPAC_MAPPING:
-            raise ValueError(f'{nt} not a valid IUPAC code')
-        self._nt = str(nt)
+    @classproperty
+    def degenerate_map(self) -> Dict[str, Set[str]]:
+        return {'.': set(DNA_IUPAC_NONDEGENERATE)}
 
-    def complement(self) -> 'Nt':
-        """Return the complement nucleotide (:class:`Nt`)."""
-        return Nt(IUPAC_MAPPING[self._nt])
+    @classproperty
+    def complement_map(self) -> Dict[str, str]:
+        return dict(zip(DNA_IUPAC_NONDEGENERATE, reversed(DNA_IUPAC_NONDEGENERATE)))
+
+    @classproperty
+    def definite_chars(self) -> Set[str]:
+        return set(DNA_IUPAC_NONDEGENERATE)
+
+    @classproperty
+    def default_gap_char(self) -> str:
+        return '-'
+
+    @classproperty
+    def gap_chars(self) -> Set[str]:
+        return set('-')
 
     def is_purine(self) -> bool:
-        """Return if this nucleotide is a purine."""
-        return self._nt in ('A', 'G')
+        """Return if this sequence is a purine."""
+        return str(self) in ('A', 'G')
 
     def is_pyrimidine(self) -> bool:
-        """Return if this nucleotide is a pyrimdine."""
-        return self._nt in ('C', 'T')
+        """Return if this sequence is a pyrimdine."""
+        return str(self) in ('C', 'T')
 
-    def to(self, other: Union[str, 'Nt']) -> 'Snv':
-        """Create a single nucleotide variant (:class:`Snv`)."""
+    def to(self, other: Union[str, 'Dna']) -> 'Snv':
+        """Create a variant allele."""
         if isinstance(other, str):
-            other = Nt(other)
+            other = Dna(other)
         return Snv(self, other)
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Nt):
-            return NotImplemented
-        return self._nt == other._nt
-
-    def __len__(self) -> int:
-        return 1
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__qualname__}(' f'"{self._nt}\")'
 
     def __hash__(self) -> int:
         return hash(repr(self))
 
-    def __str__(self) -> str:
-        return self._nt
+    def __repr__(self) -> str:
+        return f'{self.__class__.__qualname__}("{str(self)}\")'
+
+
+def Nt(seq: Union[str, Dna]) -> Dna:
+    """A single nucleotide of DNA.
+
+    Warning:
+        Will be deprecated in ``v0.7.0``. Use :class:`nucleic.Dna` instead.
+
+    """
+    warnings.warn('This function will be deprecated in v0.7.0. Use `nucleic.Dna`.')
+    return Dna(seq)
 
 
 class Snv(object):
     def __init__(
-        self, ref: Nt, alt: Nt, context: Optional[str] = None, locus: Optional[str] = None
+        self, ref: Dna, alt: Dna, context: Optional[Dna] = None, locus: Optional[str] = None
     ) -> None:
-        if not isinstance(ref, Nt) or not isinstance(alt, Nt):
-            raise TypeError('`ref` and `alt` must be of type `Nt`')
+        if not isinstance(ref, Dna) or not isinstance(alt, Dna):
+            raise TypeError('`ref` and `alt` must be of type `Dna`')
         if ref == alt:
             raise ValueError('`ref` and `alt` cannot be the same')
         if locus and not isinstance(locus, str):
             raise TypeError('`locus` must be of type `str`')
-        if context and not isinstance(context, str):
-            raise TypeError('`context` must be of type ...')
-        self.ref = ref
-        self.alt = alt
+        if context and not isinstance(context, Dna):
+            raise TypeError('`context` must be of type `Dna`')
+        self.ref: Dna = ref
+        self.alt: Dna = alt
         self.context = context
         self.locus = locus
         self.counts = Mapping[Snv, float]
         self.weights = Mapping[str, float]
 
-    @property
-    def default_color(self) -> str:
+    def color_default(self) -> str:
+        """A neutral Hex color representing this class of single nucleotide variant."""
         return DEFAULT_SNV_COLOR[f'{self.ref}→{self.alt}']
 
-    @property
-    def stratton_color(self) -> str:
+    def color_stratton(self) -> str:
+        """A Hex color representing this class of single nucleotide variant from Stratton's works."""
         return STRATTON_SNV_COLOR[f'{self.ref}→{self.alt}']
 
     @property
-    def context(self) -> str:
-        """Return the context of this Snv."""
+    def context(self) -> Dna:
+        """Return the context of this single nucleotide variant."""
         return self._context
 
     @context.setter
-    def context(self, context: Optional[str]) -> None:
+    def context(self, context: Optional[Dna]) -> None:
         """Verify that the context is of odd length and its center base
         matches the reference.
 
         Args:
-            context: The context of this :class:`Snv`, default to `ref`.
+            context: The context of this single nucleotide variant, default to `ref`.
 
         """
         if context is None:
-            self._context = str(str(self.ref))
+            self._context = self.ref
             return None
 
+        if not isinstance(context, Dna):
+            raise TypeError('`context` must be of type `Dna`')
         if len(context) % 2 != 1:
             raise ValueError(f'Context must be of odd length: {context}')
-        if context[int(len(context) / 2)] != str(self.ref):
+        if context[int(len(context) / 2)] != self.ref:
             raise ValueError(
                 f'Middle of context must equal ref: '
                 f'{context[int(len(context) / 2)]} != {self.ref}'
@@ -139,10 +155,34 @@ class Snv(object):
 
         self._context = context
 
+    @property
+    def ref(self) -> Dna:
+        """Return the reference of this single nucleotide variant."""
+        return self._ref
+
+    @ref.setter
+    def ref(self, ref: Dna) -> None:
+        """Verify that the reference is of type :class:`nucleic.Dna`."""
+        if not isinstance(ref, Dna):
+            raise TypeError('`ref` must be of type `Dna`')
+        self._ref = ref
+
+    @property
+    def alt(self) -> Dna:
+        """Return the alternate of this single nucleotide variant."""
+        return self._alt
+
+    @alt.setter
+    def alt(self, alt: Dna) -> None:
+        """Verify that the alternate is of type :class:`nucleic.Dna`."""
+        if not isinstance(alt, Dna):
+            raise TypeError('`alt` must be of type `Dna`')
+        self._alt = alt
+
     def complement(self) -> 'Snv':
-        """Return the complement single nucleotide variant (:class:`Snv`)."""
+        """Return the complement single nucleotide variant."""
         return self.copy(
-            ref=self.ref.complement(), alt=self.alt.complement(), context=complement(self.context)
+            ref=self.ref.complement(), alt=self.alt.complement(), context=self.context.complement()
         )
 
     def is_transition(self) -> bool:
@@ -155,24 +195,30 @@ class Snv(object):
         """Return if this single nucleotide variant is a transversion."""
         return not self.is_transition()
 
-    def lseq(self) -> str:
-        """Retrun the 5′ adjacent sequence to the single nucleotide variant."""
-        return self.context[0 : int((len(self.context) - 1) / 2)]
+    def lseq(self) -> Dna:
+        """Return the 5′ adjacent sequence to the single nucleotide variant."""
+        return Dna(self.context[0 : int((len(self.context) - 1) / 2)])
 
-    def rseq(self) -> str:
+    def rseq(self) -> Dna:
         """Retrun the 3′ adjacent sequence to the single nucleotide variant."""
-        return self.context[int((len(self.context) - 1) / 2) + 1 :]
+        return Dna(self.context[int((len(self.context) - 1) / 2) + 1 :])
 
     def label(self) -> str:
         """A pretty representation of the single nucleotide variant."""
         return '>'.join(map(str, [self.ref, self.alt]))
 
     def snv_label(self) -> str:
-        """TODO: deprecate."""
+        """A pretty representation of the single nucleotide variant.
+
+        Warning:
+            Will be deprecated in ``v0.7.0``. Use :meth:`Snv.label` instead.
+
+        """
+        warnings.warn('This function will be deprecated in v0.7.0. Use `nucleic.Dna`.')
         return self.label()
 
     def copy(self, **kwargs: Any) -> 'Snv':
-        """Make a deep copy of this :class:`Snv`."""
+        """Make a deep copy of this single nucleotide variant."""
         kwargs = {} if kwargs is None else kwargs
         return Snv(
             ref=kwargs.pop('ref', self.ref),
@@ -186,24 +232,24 @@ class Snv(object):
         return self
 
     def reverse_complement(self) -> 'Snv':
-        """Return the reverse complement of this single nucleotide variant (:class:`Snv`)."""
+        """Return the reverse complement of this single nucleotide variant."""
         return self.copy(
-            ref=self.ref.complement(),
-            alt=self.alt.complement(),
-            context=reverse_complement(self.context),
+            ref=self.ref.reverse_complement(),
+            alt=self.alt.reverse_complement(),
+            context=self.context.reverse_complement(),
         )
 
-    def within(self, context: str) -> 'Snv':
-        """Set the context of this :class:`Snv`."""
-        self.context = context
+    def within(self, context: Union[str, Dna]) -> 'Snv':
+        """Set the context of this single nucleotide variant."""
+        self.context = Dna(context)
         return self
 
     def with_purine_ref(self) -> 'Snv':
-        """Return this :class:`Snv` with its reference as a purine."""
+        """Return this single nucleotide variant with its reference as a purine."""
         return self.reverse_complement() if self.ref.is_pyrimidine() else self
 
     def with_pyrimidine_ref(self) -> 'Snv':
-        """Return this :class:`Snv` with its reference as a pyrimidine."""
+        """Return this single nucleotide variant with its reference as a pyrimidine."""
         return self.reverse_complement() if self.ref.is_purine() else self
 
     def set_context_from_fasta(self, infile: Path, contig: str, position: int, k: int = 3) -> str:
@@ -232,7 +278,7 @@ class Snv(object):
 
         flank_length = (k - 1) / 2
         start, end = position - flank_length - 1, position + flank_length
-        context = str(reference[contig][int(start) : int(end)])
+        context = Dna(reference[contig][int(start) : int(end)])
         self.context = context
         return context
 
@@ -252,11 +298,11 @@ class Snv(object):
         return len(self.context)
 
     def __repr__(self) -> str:
-        # locus = "None" if self.locus is None else f'"{self.locus}"'
         return (
             f'{self.__class__.__qualname__}('
-            f'ref="{self.ref}", alt="{self.alt}", '
-            f'context="{self.context}")'
+            f'ref={repr(self.ref)}, '
+            f'alt={repr(self.alt)}, '
+            f'context={repr(self.context)})'
         )
 
     def __str__(self) -> str:
@@ -278,11 +324,11 @@ class Spectrum(object):
 
         # Reverse the order of a `Spectrum` built with purine notation.
         if notation.value == 2:
-            codes = list(reversed(list(IUPAC_MAPPING.keys())))
+            codes = list(reversed(DNA_IUPAC_NONDEGENERATE))
         else:
-            codes = list(IUPAC_MAPPING.keys())
+            codes = list(DNA_IUPAC_NONDEGENERATE)
 
-        for ref, alt in permutations(map(Nt, codes), 2):
+        for ref, alt in permutations(map(Dna, codes), 2):
             if (
                 ref.is_purine()
                 and notation.value == 1
@@ -296,7 +342,7 @@ class Spectrum(object):
                 self.weights[snv.context] = 1
 
     @property
-    def contexts(self) -> List[str]:
+    def contexts(self) -> List[Dna]:
         return [snv.context for snv in self.counts]
 
     @property

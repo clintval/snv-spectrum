@@ -1,24 +1,21 @@
 API Reference
 =============
 
-``nucleic`` module
-------------------
-
 .. automodule:: nucleic
     :members:
     :undoc-members:
     :show-inheritance:
 
-``nucleic.figures`` module
---------------------------
+Figures Submodule
+-----------------
 
 .. automodule:: nucleic.figures
     :members:
     :undoc-members:
     :show-inheritance:
 
-``nucleic.util`` module
------------------------
+Utilities Submodule
+--------------------
 
 .. automodule:: nucleic.util
     :members:

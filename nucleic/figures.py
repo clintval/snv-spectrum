@@ -1,10 +1,12 @@
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
-import numpy as np
-
 from typing import Any, Tuple
 
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+
+import numpy as np
+
 from nucleic import Spectrum
+
 
 __all__ = ['plot_spectrum']
 
@@ -31,9 +33,10 @@ def plot_spectrum(
     kind: str = 'density',
     bar_width: float = 0.8,
     patch_padding: float = 0.2,
-    figsize: Tuple[float, float] = (11, 11 / 3),
+    figsize: Tuple[float, float] = (11, 3.7),
     dpi: int = 180,
 ) -> Any:
+    """Plot the spectrum of mutation."""
     N: int = 96
 
     if not isinstance(spectrum, Spectrum):
@@ -93,169 +96,3 @@ def plot_spectrum(
     ax_cbar.set_xlim(xlim)
 
     return fig, (ax_main, ax_cbar)
-
-
-# def TiTv(
-#     labels,
-#     spectrums,
-#     colors=None,
-#     bar_width=0.925,
-#     TiTv=None,
-#     a_priori=None,
-#     cluster=True,
-#     optimal_order=False,
-#     figsize=(10, 7),
-#     dpi=180,
-#     gridspec_kw=dict,
-#     linkage_kw=dict,
-#     dendrogram_kw=dict,
-#     **kwargs,
-# ):
-#     spectrums = spectrums
-#     labels = labels
-#     nrows = ncols = 1
-#     height_ratios, width_ratios = [1], [1]
-
-#     height_ratios = gridspec_kw.pop('height_ratios', height_ratios)
-#     width_ratios = gridspec_kw.pop('width_ratios', width_ratios)
-#     wspace = gridspec_kw.pop('wspace', 0.07)
-#     hspace = gridspec_kw.pop('hspace', 0.06)
-
-#     method = linkage_kw.pop('method', 'ward')
-#     metric = linkage_kw.pop('metric', 'cosine')
-#     color_threshold = dendrogram_kw.pop('color_threshold', 0)
-#     above_threshold_color = dendrogram_kw.pop('above_threshold_color', '0.4')
-
-#     colors = palettable.colorbrewer.diverging.Spectral_6.hex_colors[::-1]
-
-#     if cluster:
-#         nrows += 1
-#         height_ratios.append(3)
-
-#     if TiTv is not None or a_priori is not None:
-#         ncols += 1
-#         width_ratios.append(20)
-
-#     fig, axes = plt.subplots(
-#         nrows=nrows,
-#         ncols=ncols,
-#         figsize=figsize,
-#         dpi=210,
-#         gridspec_kw={
-#             'height_ratios': height_ratios,
-#             'width_ratios': width_ratios,
-#             'wspace': wspace,
-#             'hspace': hspace,
-#         },
-#     )
-
-#     if nrows == 1 and ncols == 1:
-#         ax_observed = axes
-#     elif nrows == 1 and ncols == 2:
-#         ax_expected, ax_observed = axes
-#         ax_expected = ax_expected
-#     elif nrows == 2 and ncols == 1:
-#         ax_dendrogram, ax_observed = axes
-#         ax_dendrogram = ax_dendrogram
-#     if nrows == 2 and ncols == 2:
-#         empty, ax_dendrogram, ax_expected, ax_observed = axes.flatten()
-#         ax_dendrogram = ax_dendrogram
-#         ax_expected = ax_expected
-#         empty.axis('off')
-
-#     ax_observed = ax_observed
-
-#     if cluster is True:
-#         try:
-#             from fastcluster import linkage
-#         except ImportError:
-#             from scipy.cluster.hierarchy import linkage
-
-#         from scipy.spatial.distance import pdist
-#         from scipy.cluster.hierarchy import dendrogram
-
-#         vectors = [spectrum.counts_as_array() for spectrum in spectrums]
-
-#         Z = linkage(X=vectors, method=method, metric=metric, **linkage_kw)
-
-#         if optimal_order is True:
-#             from polo import optimal_leaf_ordering
-
-#             Z = optimal_leaf_ordering(Z, pdist(vectors, metric))
-
-#         dend = dendrogram(
-#             Z,
-#             above_threshold_color=above_threshold_color,
-#             color_threshold=color_threshold,
-#             ax=ax_dendrogram,
-#             **dendrogram_kw,
-#         )
-
-#         ax_dendrogram.set_clip_on(False)
-
-#         # Redfine order of labels.
-#         labels = [labels[int(sample)] for sample in dend['ivl']]
-#         labels = labels
-#         spectrums = [spectrums[int(sample)] for sample in dend['ivl']]
-#         spectrums = spectrums
-
-#         # Format the dendrogram ax canvas.
-#         ax_dendrogram = axes_off(despine(ax_dendrogram), 'x')
-#         ax_dendrogram.spines['right'].set_visible(True)
-#         ax_dendrogram.yaxis.tick_right()
-
-#         for tick in ax_dendrogram.yaxis.get_major_ticks():
-#             tick.label.set_fontsize(8)
-
-#     substitution_types = spectrums[0].substitution_types
-
-#     bottom = np.repeat(0, len(labels))
-#     locations = np.arange(len(labels)) + bar_width / 2
-
-#     for subtype, color in zip(substitution_types, colors):
-#         height = [s.density()[Snv(*subtype.split('>'))] for s in spectrums]
-#         ax_observed.bar(
-#             x=locations,
-#             height=height,
-#             bottom=bottom,
-#             width=bar_width,
-#             label=subtype.replace('>', ' to '),
-#             color=color,
-#         )
-#         bottom = list(map(operator.add, height, bottom))
-
-#     ax_observed.set_xticks(locations)
-#     ax_observed.set_xticklabels(labels, rotation=90, ha='center', family='monospace')
-
-#     ax_observed.set_xlim(0, len(labels) + bar_width - 1)
-#     ax_observed.set_ylim(0, 1)
-
-#     handles, labels = ax_observed.get_legend_handles_labels()
-#     ax_observed.legend(handles[::-1], labels[::-1], frameon=False, bbox_to_anchor=(1, 1))
-
-#     if TiTv is not None:
-#         rates = [TiTv if s in transitions else 1 for s in substitution_types]
-#     elif a_priori is not None:
-#         rates = [a_priori[subtype] for subtype in substitution_types]
-
-#     if TiTv is not None or a_priori is not None:
-#         bottom = 0
-#         expected = [rate / sum(rates) for rate in rates]
-
-#         for tier, color in zip(expected, colors):
-#             ax_expected.bar(x=[0], height=tier, bottom=bottom, width=bar_width, color=color)
-#             bottom = bottom + tier
-#             ax_observed.axhline(bottom, linestyle='--', alpha=0.4)
-#             ax_expected.axhline(bottom, linestyle='--', alpha=0.4)
-
-#         ax_expected.set_xticks([0])
-#         ax_expected.set_xticklabels(['Expected'])
-#         ax_expected.set_xlim(0 - bar_width / 2, 0 + bar_width / 2)
-#         ax_expected.set_ylim(0, 1)
-
-#         ticks_off(ax_expected, axis='y')
-
-#         ax_observed.set_ylabel('')
-#         ax_observed.set_yticklabels([])
-
-#     return fig, axes

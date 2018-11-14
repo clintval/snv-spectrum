@@ -52,6 +52,7 @@ intersphinx_mapping = {
     'biopython': ('https://biopython.readthedocs.io/en/latest/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'skbio': ('http://scikit-bio.org/docs/latest/', None),
 }
 
 # Add any paths that contain templates here, relative to this directory.

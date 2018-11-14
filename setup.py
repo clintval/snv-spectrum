@@ -19,7 +19,7 @@ setuptools.setup(
     license='MIT',
     zip_safe=False,
     packages=[PACKAGE],
-    install_requires=['matplotlib', 'numpy', 'palettable', 'pyfaidx'],
+    install_requires=['matplotlib', 'numpy', 'palettable', 'pyfaidx', 'scikit-bio>=0.4.0'],
     keywords='signature mutation transition transversion spectra bioinformatics',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
