@@ -22,3 +22,13 @@ Features:
 - SVG plotting functions for displaying single nucleotide variant spectrums
 
 Read the documentation at: [nucleic.readthedocs.io](http://nucleic.readthedocs.io/)
+
+```python
+from nucleic import fetch_cosmic_signatures
+from nucleic.figures import plot_stratton_spectrum
+
+signatures = fetch_cosmic_signatures()
+canvas, (ax1, ax2) = plot_stratton_spectrum(signatures['Signature 24'])
+```
+
+![signature-24](docs/img/signature-24.svg "Signature 24")

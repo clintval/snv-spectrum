@@ -215,7 +215,7 @@ class Variant(object):
 
     def label(self) -> str:
         """A pretty representation of the variants."""
-        return '>'.join(map(str, [self.ref, self.alt]))
+        return '→'.join(map(str, [self.ref, self.alt]))
 
     def snv_label(self) -> str:
         """A pretty representation of the variant.

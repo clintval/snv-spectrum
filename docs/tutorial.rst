@@ -117,9 +117,9 @@ The figure and axes are returned to allow for custom formatting.
 
 .. code-block:: python
 
-    from nucleic import plot_spectrum
+    from nucleic.figures import plot_stratton_spectrum
 
     cosmic_signatures = fetch_cosmic_signatures()
 
-    fig, (ax_main, ax_cbar) = plot_spectrum(cosmic_signatures["Signature 1"], kind="mass")
-    fig, (ax_main, ax_cbar) = plot_spectrum(cosmic_signatures["Signature 14"], kind="mass")
+    fig, (ax_main, ax_cbar) = plot_stratton_spectrum(cosmic_signatures["Signature 1"], kind="mass")
+    fig, (ax_main, ax_cbar) = plot_stratton_spectrum(cosmic_signatures["Signature 14"], kind="mass")

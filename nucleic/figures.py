@@ -1,83 +1,73 @@
-from typing import Any, Tuple
-
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
+from collections import namedtuple
+from typing import Tuple
 
 import numpy as np
 
+from ordered_set import OrderedSet
+
+from toyplot import Canvas
+from toyplot.locator import Explicit as ExplicitLocator
+
 from nucleic import SnvSpectrum
 
-__all__ = ['plot_spectrum']
+__all__ = ['GridSpec', 'plot_stratton_spectrum']
 
 
-signature_colors = ['#52C3F1', '#231F20', '#E62223', '#CBC9C8', '#97D54C', '#EDBFC2']
+GridSpec = namedtuple('Grid', ('rows', 'columns', 'i', 'rowspan', 'j', 'columnspan'))
 
 
-def plot_spectrum(
-    spectrum: SnvSpectrum,
-    kind: str = 'density',
-    bar_width: float = 0.8,
-    patch_padding: float = 0.2,
-    figsize: Tuple[float, float] = (11, 3.7),
-    dpi: int = 180,
-) -> Any:
-    """Plot the spectrum of mutation."""
-    N: int = 96
+def plot_stratton_spectrum(
+    spectrum: SnvSpectrum, kind: str = 'count', title: str = ''
+) -> Tuple[Canvas, Tuple[Canvas.cartesian, Canvas.cartesian]]:
+    """Plot the trinucleotide spectrum of mutation.
 
+    Args:
+        spectrum: single nucleotide variants in trinucleotide contexts.
+        kind: whether to plot data as counts or as a probability mass.
+        title: the plot title.
+
+    Note:
+        The spectrum must be of pyrimidine notation.
+
+    """
+    N = 96
+    num_bins = 6
     if not isinstance(spectrum, SnvSpectrum):
         raise ValueError('`spectrum` is not of class `SnvSpectrum`')
+    elif spectrum.notation.name != 'pyrimidine':
+        raise ValueError('`spectrum.notation` must have been `Notation.pyrimidine`')
     elif len(spectrum) != N:
         raise ValueError(f'`spectrum` is not of length {N}')
-    elif kind not in ('count', 'density'):
-        raise ValueError('`kind` must be "count" or "density"')
+    elif kind not in ('count', 'mass'):
+        raise ValueError('`kind` must be "count" or "mass"')
 
-    fig, (ax_main, ax_cbar) = plt.subplots(
-        nrows=2,
-        ncols=1,
-        dpi=dpi,
-        figsize=figsize,
-        gridspec_kw={'height_ratios': [28, 1], 'hspace': 0.25, 'wspace': 0.07},
+    cmap = OrderedSet(snv.color_stratton() for snv in spectrum)
+
+    canvas = Canvas(width=900, height=300)
+    ax1_grid = GridSpec(rows=1.2, columns=1, i=0, rowspan=1, j=0, columnspan=1)
+    ax2_grid = GridSpec(rows=4.8, columns=1, i=3, rowspan=1.775, j=0, columnspan=1)
+
+    ax1 = canvas.cartesian(grid=ax1_grid, label=title)
+    ax2 = canvas.cartesian(grid=ax2_grid)
+
+    ax1.x.ticks.show = True
+    ax1.x.ticks.labels.angle = 90
+    ax1.x.ticks.labels.style.update({'font-family': 'monospace'})
+
+    ax2.x.label.text = 'Substitution Type'
+    ax2.y.show = False
+
+    ax1.x.ticks.locator = ExplicitLocator(np.arange(N), [str(snv.context) for snv in spectrum])
+    ax2.x.ticks.locator = ExplicitLocator(
+        np.arange(num_bins), OrderedSet(snv.label() for snv in spectrum)
     )
 
-    fig.set_facecolor('white')
-    ax_main.set_axisbelow(True)
-    ax_main.yaxis.grid(True, color='0.8', ls='-')
+    vector = spectrum.values() if kind == 'count' else spectrum.mass()
+    for i, (data, color) in enumerate(zip(np.split(vector, num_bins), cmap)):
+        start = i * (N / num_bins)
+        x = np.arange(start, start + (N / num_bins))
+        ax1.bars(x, data, color=color)
 
-    if kind == 'density':
-        vector = spectrum.mass()
-    elif kind == 'count':
-        vector = spectrum.values()
+    ax2.bars(np.repeat(1, num_bins), color=cmap)
 
-    bars = ax_main.bar(x=range(N), height=vector, width=bar_width)
-
-    for i, color in enumerate(signature_colors):
-        for bar in bars[16 * i : 16 * i + 16]:
-            bar.set_color(color)
-
-        rectangle = patches.Rectangle(
-            xy=(16 * i - 1 + patch_padding / 2 + bar_width, 0),
-            width=16 - patch_padding,
-            height=1,
-            color=color,
-        )
-        ax_cbar.add_patch(rectangle)
-
-    ax_main.set_xticks(range(N))
-    ax_main.set_xticklabels(
-        spectrum.contexts, rotation=90, ha='center', y=0.02, family='monospace'
-    )
-
-    for spine in ('top', 'right', 'bottom', 'left'):
-        ax_cbar.spines[spine].set_visible(False)
-
-    xlim = (0 - bar_width, N - 1 + bar_width)
-    labels = sorted(set([snv.label().replace('>', ' to ') for snv in spectrum.keys()]))
-
-    ax_cbar.get_yaxis().set_visible(False)
-    ax_cbar.set_xticks((np.linspace(*xlim, 7) + 16 / 2)[:6])
-    ax_cbar.set_xticklabels(labels)
-
-    ax_main.set_xlim(xlim)
-    ax_cbar.set_xlim(xlim)
-
-    return fig, (ax_main, ax_cbar)
+    return canvas, (ax1, ax2)

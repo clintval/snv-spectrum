@@ -121,7 +121,7 @@ class TestVariant(object):
         assert snv.lseq() == DNA(lseq)
         assert snv.rseq() == DNA(rseq)
 
-    @pytest.mark.parametrize('snv,result', [(DNA('A').to('C'), 'A>C'), (DNA('T').to('A'), 'T>A')])
+    @pytest.mark.parametrize('snv,result', [(DNA('A').to('C'), 'A→C'), (DNA('T').to('A'), 'T→A')])
     def test_snv_for_snv_label(self, snv, result):
         assert snv.label() == result
 
