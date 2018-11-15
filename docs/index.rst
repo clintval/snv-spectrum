@@ -16,6 +16,6 @@ Features
 .. toctree::
    :maxdepth: 1
 
-   nucleic
    tutorial
+   nucleic
    CONTRIBUTING

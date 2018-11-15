@@ -12,22 +12,6 @@ __all__ = ['plot_spectrum']
 
 signature_colors = ['#52C3F1', '#231F20', '#E62223', '#CBC9C8', '#97D54C', '#EDBFC2']
 
-signature_cmap = {
-    'A>C': '#EDBFC2',
-    'A>G': '#97D54C',
-    'A>T': '#CBC9C8',
-    'C>A': '#52C3F1',
-    'C>G': '#231F20',
-    'C>T': '#E62223',
-    'G>A': '#E62223',
-    'G>C': '#231F20',
-    'G>T': '#52C3F1',
-    'T>A': '#CBC9C8',
-    'T>C': '#97D54C',
-    'T>G': '#EDBFC2',
-}
-
-
 def plot_spectrum(
     spectrum: SnvSpectrum,
     kind: str = 'density',

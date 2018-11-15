@@ -37,5 +37,5 @@ def deconstruct_sigs(spectrum: SnvSpectrum, signatures: List[SnvSpectrum], metho
 
 
 def identify_signatures(signatures: List[SnvSpectrum], n: int) -> None:
-    """Identifiy de novo signatures from spectrums."""
+    """Identifiy *de novo* signatures from spectrums."""
     raise NotImplementedError('Function placeholder.')

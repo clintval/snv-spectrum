@@ -1,8 +1,16 @@
 from typing import Mapping
 
+__all__ = [
+    'DNA_IUPAC_NONDEGENERATE',
+    'STRATTON_SNV_COLOR',
+    'DEFAULT_SNV_COLOR',
+    'LONGFORM_LABEL',
+]
+
+#: The non-degenerate IUPAC DNA bases.
 DNA_IUPAC_NONDEGENERATE: str = 'ACGT'
 
-
+#: The colors of all single nucleotide variants used in Stratton *et. al.* papers.
 STRATTON_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#EDBFC2',
     'A→G': '#97D54C',
@@ -18,6 +26,7 @@ STRATTON_SNV_COLOR: Mapping[str, str] = {
     'T→G': '#EDBFC2',
 }
 
+#: The colors of all single nucleotide variants.
 DEFAULT_SNV_COLOR: Mapping[str, str] = {
     'A→C': '#D53E4F',
     'A→G': '#FC8D59',
@@ -33,6 +42,7 @@ DEFAULT_SNV_COLOR: Mapping[str, str] = {
     'T→G': '#D53E4F',
 }
 
+#: A mapping between shortform canonical single nucleotides and longform.
 LONGFORM_LABEL: Mapping[str, str] = {
     'A→C': 'A:T→C:G',
     'A→G': 'A:T→G:C',

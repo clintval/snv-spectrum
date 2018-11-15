@@ -7,6 +7,7 @@
 
 # https://stackoverflow.com/a/45613395
 import matplotlib
+
 matplotlib.use('agg')
 
 # -- Path setup --------------------------------------------------------------
@@ -46,7 +47,7 @@ extensions = [
 
 napoleon_include_private_with_doc = True
 napoleon_google_docstring = True
-napoleon_numpy_docstring = False
+napoleon_numpy_docstring = True
 napoleon_use_param = False
 napoleon_use_ivar = False
 napoleon_use_rtype = False
@@ -79,6 +80,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
+html_static_path = []
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
@@ -101,7 +103,6 @@ html_theme_options = {
     'display_version': True,
     'prev_next_buttons_location': 'bottom',
     'style_external_links': False,
-    # 'vcs_pageview_mode': '',
     # Toc options
     'collapse_navigation': True,
     'sticky_navigation': True,

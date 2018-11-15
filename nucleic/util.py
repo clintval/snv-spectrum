@@ -10,7 +10,7 @@ __all__ = ['DictMostCommonMixin', 'DictNpArrayMixin', 'DictPrettyReprMixin']
 
 
 class DictMostCommonMixin(object):
-    """Give any dict-like object a most common method.
+    """Give any *dict-like* object a most common method.
 
     Examples:
         >>> class MyDict(DictMostCommonMixin, dict):
@@ -41,7 +41,7 @@ class DictMostCommonMixin(object):
 
 
 class DictNpArrayMixin(object):
-    """Make any dict-like object methods return :class:`numpy.ndarray` by default.
+    """Make any *dict-like* object methods return :class:`numpy.ndarray` by default.
 
     Examples:
         >>> class MyDict(DictNpArrayMixin, dict):
@@ -67,7 +67,7 @@ class DictNpArrayMixin(object):
 
 
 class DictPrettyReprMixin(object):
-    """Make any dict-like object pretty print when :meth:`DictPrettyReprMixin.__repr__` is called.
+    """Make any *dict-like* object pretty print when :meth:`DictPrettyReprMixin.__repr__` is called.
 
     Examples:
         >>> class AReallyLongDictName(DictPrettyReprMixin, dict):
