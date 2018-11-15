@@ -105,7 +105,7 @@ Download the published `COSMIC signatures <http://cancer.sanger.ac.uk/cosmic/sig
 
 .. code-block:: python
 
-    >>> from nucleic.util import fetch_cosmic_signatures
+    >>> from nucleic import fetch_cosmic_signatures
     >>> signatures = fetch_cosmic_signatures()
 
 Plotting Spectrums

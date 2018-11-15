@@ -7,8 +7,8 @@ import numpy as np
 
 from nucleic import SnvSpectrum
 
-
 __all__ = ['plot_spectrum']
+
 
 signature_colors = ['#52C3F1', '#231F20', '#E62223', '#CBC9C8', '#97D54C', '#EDBFC2']
 
@@ -59,9 +59,9 @@ def plot_spectrum(
     ax_main.yaxis.grid(True, color='0.8', ls='-')
 
     if kind == 'density':
-        vector = spectrum.mass_as_array()
+        vector = spectrum.mass()
     elif kind == 'count':
-        vector = spectrum.counts_as_array()
+        vector = spectrum.values()
 
     bars = ax_main.bar(x=range(N), height=vector, width=bar_width)
 
@@ -86,7 +86,7 @@ def plot_spectrum(
         ax_cbar.spines[spine].set_visible(False)
 
     xlim = (0 - bar_width, N - 1 + bar_width)
-    labels = sorted(set([snv.label().replace('>', ' to ') for snv in spectrum.snvs]))
+    labels = sorted(set([snv.label().replace('>', ' to ') for snv in spectrum.keys()]))
 
     ax_cbar.get_yaxis().set_visible(False)
     ax_cbar.set_xticks((np.linspace(*xlim, 7) + 16 / 2)[:6])

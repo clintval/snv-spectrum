@@ -1,7 +1,7 @@
 import pytest
 
-from nucleic import SnvSpectrum
-from nucleic.util import dna_kmers, fetch_cosmic_signatures
+from nucleic import SnvSpectrum, fetch_cosmic_signatures
+from nucleic.sequence import dna_kmers
 
 
 class TestUtil(object):

@@ -1,8 +1,12 @@
+import csv
+import io
 import warnings
+from collections import OrderedDict, defaultdict
 from enum import Enum
 from itertools import permutations
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterable, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Mapping, Optional, Set, Tuple, Type, Union
+import urllib.request as request
 
 import numpy as np
 from pyfaidx import Fasta
@@ -10,11 +14,17 @@ from skbio.util import classproperty
 from skbio.sequence._nucleotide_mixin import NucleotideMixin
 from skbio.sequence import GrammaredSequence
 
-from nucleic.util import dna_kmers
 from nucleic.constants import DNA_IUPAC_NONDEGENERATE
-from nucleic.util import DEFAULT_SNV_COLOR, STRATTON_SNV_COLOR
+from nucleic.sequence import dna_kmers
+from nucleic.constants import DEFAULT_SNV_COLOR, STRATTON_SNV_COLOR
+from nucleic.util import DictNpArrayMixin, DictMostCommonMixin, DictPrettyReprMixin
 
-__all__ = ['DNA', 'Notation', 'Nt', 'Variant', 'Snv', 'SnvSpectrum']
+
+__all__ = ['DNA', 'Notation', 'Nt', 'Variant', 'Snv', 'SnvSpectrum', 'fetch_cosmic_signatures']
+
+COSMIC_SIGNATURE_URL = (
+    'http://cancer.sanger.ac.uk/cancergenome/assets/signatures_probabilities.txt'
+)
 
 
 class Notation(Enum):
@@ -118,16 +128,16 @@ class Variant(object):
         self.weights = Mapping[str, float]
 
     def color_default(self) -> str:
-        """A neutral Hex color representing this class of single nucleotide variant."""
+        """A neutral Hex color representing this class of variant."""
         return DEFAULT_SNV_COLOR[f'{self.ref}→{self.alt}']
 
     def color_stratton(self) -> str:
-        """A Hex color representing this class of single nucleotide variant from Stratton's works."""
+        """A Hex color representing this class of variant from Stratton's works."""
         return STRATTON_SNV_COLOR[f'{self.ref}→{self.alt}']
 
     @property
     def context(self) -> DNA:
-        """Return the context of this single nucleotide variant."""
+        """Return the context of this variant."""
         return self._context
 
     @context.setter
@@ -136,7 +146,7 @@ class Variant(object):
         matches the reference.
 
         Args:
-            context: The context of this single nucleotide variant, default to `ref`.
+            context: The context of this variant, default to `ref`.
 
         """
         if context is None:
@@ -157,7 +167,7 @@ class Variant(object):
 
     @property
     def ref(self) -> DNA:
-        """Return the reference of this single nucleotide variant."""
+        """Return the reference of this variant."""
         return self._ref
 
     @ref.setter
@@ -169,7 +179,7 @@ class Variant(object):
 
     @property
     def alt(self) -> DNA:
-        """Return the alternate of this single nucleotide variant."""
+        """Return the alternate of this variant."""
         return self._alt
 
     @alt.setter
@@ -180,35 +190,35 @@ class Variant(object):
         self._alt = alt
 
     def complement(self) -> 'Variant':
-        """Return the complement single nucleotide variant."""
+        """Return the complement variant."""
         return self.copy(
             ref=self.ref.complement(), alt=self.alt.complement(), context=self.context.complement()
         )
 
     def is_transition(self) -> bool:
-        """Return if this single nucleotide variant is a transition."""
+        """Return if this variant is a transition."""
         return (self.ref.is_pyrimidine() and self.alt.is_pyrimidine()) or (
             self.ref.is_purine() and self.alt.is_purine()
         )
 
     def is_transversion(self) -> bool:
-        """Return if this single nucleotide variant is a transversion."""
+        """Return if this variant is a transversion."""
         return not self.is_transition()
 
     def lseq(self) -> DNA:
-        """Return the 5′ adjacent sequence to the single nucleotide variant."""
+        """Return the 5′ adjacent sequence to the variant."""
         return DNA(self.context[0 : int((len(self.context) - 1) / 2)])
 
     def rseq(self) -> DNA:
-        """Retrun the 3′ adjacent sequence to the single nucleotide variant."""
+        """Retrun the 3′ adjacent sequence to the variant."""
         return DNA(self.context[int((len(self.context) - 1) / 2) + 1 :])
 
     def label(self) -> str:
-        """A pretty representation of the single nucleotide variant."""
+        """A pretty representation of the variants."""
         return '>'.join(map(str, [self.ref, self.alt]))
 
     def snv_label(self) -> str:
-        """A pretty representation of the single nucleotide variant.
+        """A pretty representation of the variant.
 
         Warning:
             Will be deprecated in ``v0.7.0``. Use :meth:`Variant.label` instead.
@@ -218,7 +228,7 @@ class Variant(object):
         return self.label()
 
     def copy(self, **kwargs: Any) -> 'Variant':
-        """Make a deep copy of this single nucleotide variant."""
+        """Make a deep copy of this variant."""
         kwargs = {} if kwargs is None else kwargs
         return Variant(
             ref=kwargs.pop('ref', self.ref),
@@ -232,7 +242,7 @@ class Variant(object):
         return self
 
     def reverse_complement(self) -> 'Variant':
-        """Return the reverse complement of this single nucleotide variant."""
+        """Return the reverse complement of this variant."""
         return self.copy(
             ref=self.ref.reverse_complement(),
             alt=self.alt.reverse_complement(),
@@ -240,16 +250,16 @@ class Variant(object):
         )
 
     def within(self, context: Union[str, DNA]) -> 'Variant':
-        """Set the context of this single nucleotide variant."""
+        """Set the context of this variant."""
         self.context = DNA(context)
         return self
 
     def with_purine_ref(self) -> 'Variant':
-        """Return this single nucleotide variant with its reference as a purine."""
+        """Return this variant with its reference as a purine."""
         return self.reverse_complement() if self.ref.is_pyrimidine() else self
 
     def with_pyrimidine_ref(self) -> 'Variant':
-        """Return this single nucleotide variant with its reference as a pyrimidine."""
+        """Return this variant with its reference as a pyrimidine."""
         return self.reverse_complement() if self.ref.is_purine() else self
 
     def set_context_from_fasta(self, infile: Path, contig: str, position: int, k: int = 3) -> str:
@@ -320,6 +330,13 @@ def Snv(ref: DNA, alt: DNA, context: Optional[DNA] = None) -> 'Variant':
     return Variant(ref, alt, context)
 
 
+class ContextWeights(DictPrettyReprMixin, DictMostCommonMixin, DictNpArrayMixin, OrderedDict):
+    """A dictionary of sequences and their respective weights."""
+
+    def __new__(cls, data: Optional[Any] = None, **kwargs: Mapping[Any, Any]) -> Any:
+        return super().__new__(cls, data, **kwargs)
+
+
 class IndelSpectrum(object):
     """A spectrum of indel variants of various sizes.
 
@@ -332,8 +349,10 @@ class IndelSpectrum(object):
         raise NotImplementedError('Class placeholder.')
 
 
-class SnvSpectrum(object):
-    def __init__(self, k: int = 1, notation: Notation = Notation.none) -> None:
+class SnvSpectrum(DictMostCommonMixin, DictNpArrayMixin, OrderedDict):
+    def __init__(self, k: int = 3, notation: Notation = Notation.none) -> None:
+        self._initialized: bool = False
+
         if not isinstance(k, int) and k % 2 != 1 and k > 0:
             raise TypeError('`k` must be a positive odd integer')
         elif not isinstance(notation, Notation):
@@ -341,9 +360,7 @@ class SnvSpectrum(object):
 
         self.k = k
         self.notation = notation
-
-        self.counts: Mapping[Variant, float] = {}
-        self.weights: Mapping[str, float] = {}
+        self.weights = ContextWeights()
 
         # Reverse the order of a `SnvSpectrum` built with purine notation.
         if notation.name == 'purine':
@@ -359,64 +376,142 @@ class SnvSpectrum(object):
                 and notation.name == 'purine'
             ):
                 continue
-            for context in filter(lambda kmer: kmer[int((k - 1) / 2)] == str(ref), dna_kmers(k)):
-                snv = ref.to(alt).within(context)
-                self.counts[snv] = 0
-                self.weights[snv.context] = 1
+            for context in dna_kmers(k):
+                if context[int((k - 1) / 2)] != str(ref):
+                    continue
 
-    def mass(self) -> Mapping[Variant, float]:
-        def norm_count(snv: Variant) -> float:
-            return self.counts[snv] / self.weights[snv.context]
-
-        proportions = {snv: norm_count(snv) for snv in self.counts}
-        total = sum(proportions.values())
-        if total == 0:
-            return proportions
-        else:
-            return {snv: proportions[snv] / total for snv in self.counts}
-
-    def mass_as_array(self) -> np.array:
-        return np.array(list(self.mass().values()))
-
-    def split_by_notation(self) -> Tuple['SnvSpectrum', 'SnvSpectrum']:
-        if self.notation.value != 0:
-            raise TypeError('`SnvSpectrum` notation must be `Notation.none`')
-
-        spectrum_pu = SnvSpectrum(self.k, Notation.purine)
-        spectrum_py = SnvSpectrum(self.k, Notation.pyrimidine)
-
-        for snv, count in self.counts.items():
-            if snv.ref.is_purine:
-                spectrum_pu.counts[snv] = count  # type: ignore
-                spectrum_pu.weights[snv.context] = self.weights[snv.context]  # type: ignore
-            elif snv.ref.is_pyrimidine():
-                spectrum_py.counts[snv] = count  # type: ignore
-                spectrum_py.weights[snv.context] = self.weights[snv.context]  # type: ignore
-
-        return spectrum_pu, spectrum_py
+                variant = ref.to(alt)
+                self.weights[context] = 1
+                self[variant.within(context)] = 0
+        self._initialized = True
 
     @classmethod
     def from_iterable(
         cls, iterable: Iterable, k: int = 1, notation: Notation = Notation.none
     ) -> 'SnvSpectrum':
         spectrum = cls(k=k, notation=notation)
-        iterable = list(iterable)  # Cast to list
+        iterable = list(iterable)
 
         if len(spectrum) != len(iterable):
             raise ValueError('`iterable` not of `len(SnvSpectrum())`')
 
-        for snv, count in zip(spectrum.counts.keys(), iterable):
-            spectrum.counts[snv] = count  # type: ignore # pylint: disable=E1101
+        for snv, count in zip(spectrum.keys(), iterable):
+            spectrum[snv] = count
         return spectrum
+
+    def mass(self) -> np.ndarray:
+        """Return the discrete probability mass of this spectrum.
+
+        Raises:
+            ValueError: if an observation is found with zero context weight.
+
+        """
+
+        def norm_count(snv: Variant) -> float:
+            if self[snv] != 0 and self.weights[str(snv.context)] == 0:
+                raise ValueError('Observations with no weight found: {self[snv]}')
+            return float(self[snv] / self.weights[str(snv.context)])
+
+        array = np.array([norm_count(snv) for snv in self.keys()])
+        return array / array.sum()
+
+    def split_by_notation(self) -> Tuple['SnvSpectrum', 'SnvSpectrum']:
+        """Split pyrimidine *vs* purine reference variants into seperate spectrum.
+
+        Raises:
+            ValueError: if the ``notation`` of this spectrum is not :class:`Notation.none`.
+
+        Returns:
+            spectrum_pu: A :class:`SnvSpectrum` holding purine reference variants.
+            spectrum_py: A :class:`SnvSpectrum` holding pyrimidine reference variants.
+
+        Note:
+            - TODO: Return a collection holding the two spectrum, like ``namedtuple``.
+
+        """
+        if self.notation.name != 'none':
+            raise ValueError('`SnvSpectrum` notation must be `Notation.none`')
+
+        spectrum_pu = SnvSpectrum(self.k, Notation.purine)
+        spectrum_py = SnvSpectrum(self.k, Notation.pyrimidine)
+
+        for snv, count in self.items():
+            if snv.ref.is_purine():
+                spectrum_pu[snv] = count
+                spectrum_pu.weights[str(snv.context)] = self.weights[str(snv.context)]
+            elif snv.ref.is_pyrimidine():
+                spectrum_py[snv] = count
+                spectrum_py.weights[str(snv.context)] = self.weights[str(snv.context)]
+
+        return spectrum_pu, spectrum_py
+
+    @property
+    def counts(self) -> 'SnvSpectrum':
+        """Return all single nucleotide variants and their counts.
+
+        Warning:
+            Will be deprecated in ``v0.7.0``. Use :class:`nucleic.SnvSpectrum` instead.
+
+        """
+        warnings.warn('This function will be deprecated in v0.7.0. Use `nucelic.SnvSpectrum`.')
+        return self
+
+    def counts_as_array(self) -> np.ndarray:
+        """Return all counts as a :class:`numpy.ndarray`.
+        
+        Warning:
+            Will be deprecated in ``v0.7.0``. Use :class:`nucleic.SnvSpectrum.values()` instead.
+
+        """
+        warnings.warn(
+            'This function will be deprecated in v0.7.0. Use `nucleic.SnvSpectrum.values()`.'
+        )
+        return self.weights.keys()
+
+    def weights_as_array(self) -> np.ndarray:
+        """Return all weights as a :class:`numpy.ndarray`.
+
+        Warning:
+            Will be deprecated in ``v0.7.0``. Use :class:`nucleic.SnvSpectrum.weights.values` instead.
+
+        """
+        warnings.warn(
+            'This function will be deprecated in v0.7.0. Use `nucleic.SnvSpectrum.weights.values`.'
+        )
+        return self.weights.values()
+
+    def contexts(self) -> np.ndarray:
+        """Return all :class:`Variant` key as a :class:`numpy.ndarray`.
+
+        Warning:
+            Will be deprecated in ``v0.7.0``. Use :class:`nucleic.SnvSpectrum.weights.keys` instead.
+
+        """
+        warnings.warn(
+            'This function will be deprecated in v0.7.0. Use `nucleic.SnvSpectrum.weights.keys`.'
+        )
+        return self.weights.keys()
+
+    def snvs(self) -> np.ndarray:
+        """Return all :class:`Variant` key as a :class:`numpy.ndarray`.
+
+        Warning:
+            Will be deprecated in ``v0.7.0``. Use :class:`nucleic.SnvSpectrum.keys` instead.
+
+        """
+        warnings.warn(
+            'This function will be deprecated in v0.7.0. Use `nucleic.SnvSpectrum.keys`.'
+        )
+        return self.keys()
 
     def __setitem__(self, key: Variant, value: float) -> None:
         if not isinstance(key, Variant):
             raise TypeError(f'Key must be of type `Variant`: {key}')
         elif not isinstance(value, (int, float)):
             raise TypeError(f'Value must be a number: {value}')
-        elif key not in self.counts:
+        elif self._initialized and key not in self:
             raise KeyError(f'Variant not found in `SnvSpectrum.counts`: {key}')
-        self.counts[key] = value  # type: ignore
+        super().__setitem__(key, value)
 
     def __repr__(self) -> str:
         return f'{self.__class__.__qualname__}(' f'k={self.k}, ' f'notation={self.notation})'
@@ -431,3 +526,35 @@ def Spectrum(k: int = 1, notation: Notation = Notation.none) -> SnvSpectrum:
     """
     warnings.warn('This function will be deprecated in v0.7.0. Use `nucleic.SnvSpectrum`.')
     return SnvSpectrum(k, notation)
+
+
+def fetch_cosmic_signatures() -> Dict:
+    """Fetch the COSMIC published signatures from the following URL.
+
+        - https://cancer.sanger.ac.uk/cosmic
+
+    Returns:
+        signatures: The probability masses of the COSMIC signatures.
+
+    """
+    from nucleic import DNA, SnvSpectrum, Notation
+
+    all_signatures: defaultdict = defaultdict(
+        lambda: SnvSpectrum(k=3, notation=Notation.pyrimidine)
+    )
+
+    with request.urlopen(COSMIC_SIGNATURE_URL) as handle:
+        reader = csv.reader(io.TextIOWrapper(handle), delimiter='\t')
+
+        # First three columns are subtype, column, and label titles
+        _, _, _, *signature_titles = list(filter(None, next(reader)))
+
+        for line in reader:
+            subtype, context, _, *points = list(filter(None, line))
+            for title, point in zip(signature_titles, map(float, points)):
+                # Split the subtype to get reference and alternate
+                left, right = subtype.split('>')
+                snv = DNA(left).to(right).within(context)
+                all_signatures[title][snv] = point
+
+    return dict(all_signatures)
