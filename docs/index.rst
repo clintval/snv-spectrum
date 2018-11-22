@@ -16,6 +16,6 @@ Features
 .. toctree::
    :maxdepth: 1
 
-   tutorial
+   01-tutorial.ipynb
    nucleic
    CONTRIBUTING

@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -22,21 +21,22 @@ project = 'nucleic'
 copyright = '2018, Clint Valentine'
 author = 'clintval'
 
-# The short X.Y version
-version = '0.6'
-# The full version, including alpha/beta/rc tags
-release = '0.6.3'
+import nucleic
+
+version = nucleic.__version__
+release = nucleic.__version__
 
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '1.0'
+needs_sphinx = '1.5'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'nbsphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.mathjax',
     'sphinx.ext.intersphinx',
@@ -56,6 +56,7 @@ intersphinx_mapping = {
     'biopython': ('https://biopython.readthedocs.io/en/latest/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
     'skbio': ('http://scikit-bio.org/docs/latest/', None),
 }
 
@@ -80,21 +81,14 @@ language = 'en'
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
 html_static_path = []
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'default'
 
 # -- Options for HTML output -------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.
-# See the documentation for a list of builtin themes.
-#
 html_theme = "sphinx_rtd_theme"
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#
 html_theme_options = {
     'canonical_url': '',
     'analytics_id': '',
@@ -110,10 +104,22 @@ html_theme_options = {
     'titles_only': False,
 }
 
+# Don't add .txt suffix to source files (available for Sphinx >= 1.5):
+html_sourcelink_suffix = ''
+
+# Work-around until https://github.com/sphinx-doc/sphinx/issues/4229 is solved:
+html_scaled_image_link = False
+
+# Execute notebooks before conversion: 'always', 'never', 'auto' (default)
+nbsphinx_execute = 'always'
+
+# List of arguments to be passed to the kernel that executes the notebooks:
+nbsphinx_execute_arguments = [
+    "--InlineBackend.figure_formats={'svg', 'pdf'}",
+    "--InlineBackend.rc={'figure.dpi': 96}",
+]
+
 # -- Options for HTMLHelp output ---------------------------------------------
 
-# -- Options for LaTeX output ------------------------------------------------
-
-# -- Options for manual page output ------------------------------------------
-
-# -- Options for Texinfo output ----------------------------------------------
+# Output file base name for HTML help builder.
+htmlhelp_basename = 'nucleicdoc'

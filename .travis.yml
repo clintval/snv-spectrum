@@ -1,12 +1,39 @@
+sudo: required
+
 language: python
+
 cache: pip
+
+addons:
+  apt:
+    packages:
+      - ghostscript
+
 python:
   - 3.6
+
+env:
+  DISPLAY=":99.0"
+
+before_install:
+  # matplotlib hack: no display name and no $DISPLAY environment variable.
+  - export DISPLAY=":99.0"
+   # matplotlib hack: starting a headless web server.
+  # http://docs.travis-ci.com/user/gui-and-headless-browsers/#Starting-a-Web-Server
+  - "sh -e /etc/init.d/xvfb start"
+  # nbsphinx: necessary dependency for converting jupyter notebooks to RST.
+  - export HOME=/home/travis
+  - wget https://github.com/jgm/pandoc/releases/download/1.15.1/pandoc-1.15.1-1-amd64.deb
+  - sudo dpkg -i pandoc-1.15.1-1-amd64.deb
+
 install:
   - pip install codecov tox-travis
+
 script:
   - tox
+
 after_success:
   - codecov
+
 notifications:
   email: false

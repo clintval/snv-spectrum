@@ -18,17 +18,17 @@ Features:
 
 - Model DNA and variant alleles within their local context using an elegant API
 - Combine single nucleotide variants into spectrums of mutagenesis
-- Fetch COSMIC signatures of mutation as well as other published signatures
+- Fetch COSMIC signatures of mutation, as well as other published signatures
 - SVG plotting functions for displaying single nucleotide variant spectrums
 
 Read the documentation at: [nucleic.readthedocs.io](http://nucleic.readthedocs.io/)
 
 ```python
-from nucleic import fetch_cosmic_signatures
-from nucleic.figures import plot_stratton_spectrum
+from nucleic.cosmic import fetch_cosmic_signatures
+from nucleic.plotting import trinucleotide_spectrum
 
 signatures = fetch_cosmic_signatures()
-canvas, (ax1, ax2) = plot_stratton_spectrum(signatures['Signature 24'])
+canvas, (ax1, ax2) = trinucleotide_spectrum(signatures['Signature 24'])
 ```
 
 ![signature-24](https://raw.githubusercontent.com/clintval/nucleic/master/docs/img/signature-24.svg?sanitize=true "Signature 24")

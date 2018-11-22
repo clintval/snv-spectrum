@@ -7,7 +7,6 @@ Submodules
 .. toctree::
 
    nucleic.base
-   nucleic.constants
-   nucleic.figures
-   nucleic.sequence
+   nucleic.plotting
+   nucleic.distance
    nucleic.util

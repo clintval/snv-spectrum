@@ -22,7 +22,7 @@ py36-type -> type check the library
 py36-docs -> test building of HTML docs
 
 additional environments:
-dev       -> the official sample_sheet development environment
+dev       -> the official nucleic development environment
 ```
 
 To run just one environment:
@@ -34,5 +34,5 @@ To run just one environment:
 To pass in positional arguments to a specified environment:
 
 ```bash
-❯ tox -e py36 -- -x tests/test_sample_sheet.py
+❯ tox -e py36 -- -x tests/test_nucleic.py
 ```
