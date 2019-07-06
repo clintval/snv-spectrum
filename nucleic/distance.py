@@ -81,7 +81,7 @@ def hierarchy_cluster(
         A custom distance metric can also be used for a metric.
 
     """
-    observations = [spectrum.values() for spectrum in spectrums]
+    observations = [spectrum.mass() for spectrum in spectrums]
     pairwise = pdist(observations, metric=metric)
     Z: np.ndarray = linkage(pairwise, method=method, metric=metric)
     if optimal_ordering is True:

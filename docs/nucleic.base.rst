@@ -1,6 +1,6 @@
 nucleic module
 --------------
 
-.. automodule:: nucleic._api
+.. automodule:: nucleic
     :members:
     :show-inheritance:

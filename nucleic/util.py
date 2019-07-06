@@ -1,13 +1,16 @@
 import json
+import logging
 import re
 from heapq import nlargest
-from itertools import product
-from operator import itemgetter
+from itertools import groupby, product
+from operator import attrgetter, itemgetter
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
+
+import more_itertools
 
 __all__ = [
     'DictMostCommonMixin',
@@ -15,6 +18,9 @@ __all__ = [
     'DictPrettyReprMixin',
     'UnreachableException',
     'dataset',
+    'filter_every',
+    'float_range',
+    'groupby_to_dict',
     'kmers',
 ]
 
@@ -116,6 +122,30 @@ class DictPrettyReprMixin(object):
         return f'{self.__class__.__qualname__}({content})'
 
 
+class ProgressLogger(object):
+    """Create a progress logger which will emit after a period of recording."""
+
+    def __init__(
+        self,
+        logger: logging.Logger,
+        noun: str = "records",
+        verb: str = "processed",
+        period: int = 1000,
+    ) -> None:
+        self._at = 0
+        self.logger = logger
+        self.noun = noun
+        self.verb = verb
+        self.period = period
+
+    def record(self, item: Any) -> None:
+        """Record an event."""
+        self._at += 1
+        if self._at % self.period == 0:
+            message = f'{self.verb.title()} {self._at:,} {self.noun}.'
+            self.logger.info(message)
+
+
 def dataset(identifier: str, database: str = 'published') -> Dict:
     """Return the filesystem path to the packaged data file.
 
@@ -130,11 +160,11 @@ def dataset(identifier: str, database: str = 'published') -> Dict:
         >>> from pprint import pprint
         >>> from nucleic.util import dataset
         >>> pprint(dataset('28351974'))  # doctest:+ELLIPSIS
-        [{'name': 'AFB1-gpt-10wk-exposure',
-          'vector': [0.0034329041,
-                     0.0137316166,
-                     0.0344053282,
-                     0.0188924926,
+        {'AFB1-gpt-10wk-exposure': {'treatment': 'Aflatoxin B1',
+                                    'vector': [0.0034329041,
+                                            0.0137316166,
+                                            0.0344053282,
+                                            0.0188924926,
         ...
 
     """
@@ -146,6 +176,49 @@ def dataset(identifier: str, database: str = 'published') -> Dict:
     assert path.exists(), f'Database "{database}" does not exist!"'
     content: Dict = json.loads(path.read_text()).get(identifier, {})
     return content
+
+
+def filter_idx(iterable: Iterable, seq: List[int]):
+    for segment in more_itertools.windowed(iterable, len(seq), step=len(seq)):
+        for i, item in zip(seq, segment):
+            if i == 1:
+                yield item
+
+
+def filter_every(iterable, n):
+    """Filter every `n`th item in an iterable."""
+    for i, item in enumerate(iterable):
+        if i % n == 0:
+            continue
+        yield item
+
+
+def float_range(x: float, y: Optional[float] = None, jump: float = 1):
+    """Range that supports floating point numbers.
+    
+    Note:
+        From the following source:
+        
+            - https://gist.github.com/axelpale/3e780ebdde4d99cbb69ffe8b1eada92c
+
+    """
+    if y is None:
+        x, y = 0, x
+    i = 0.0
+    x = float(x)
+    x0 = x
+    epsilon = jump / 2.0
+    yield x
+    while x + epsilon < y:
+        i += 1.0
+        x = x0 + i * jump
+        yield x
+
+
+def groupby_to_dict(items: Iterable[Any], attr: str) -> Dict[str, List[Any]]:
+    """Group a collection of objects by any attribute."""
+    mapping = {name: list(group) for name, group in groupby(items, attrgetter(attr))}
+    return mapping
 
 
 def kmers(k: int, alphabet: Union[Iterable[str], str]) -> Generator[str, None, None]:

@@ -1,6 +1,7 @@
 from collections import namedtuple
 from typing import Any, Tuple
 
+import palettable
 import numpy as np
 from ordered_set import OrderedSet
 
@@ -8,6 +9,7 @@ from toyplot import Canvas
 from toyplot.locator import Explicit as ExplicitLocator
 
 from nucleic import SnvSpectrum
+from .seq_record import *
 
 __all__ = ['GridSpec', 'trinucleotide_spectrum']
 
@@ -162,3 +164,201 @@ def trinucleotide_spectrum(
         return _matplotlib_trinucleotide_spectrum(spectrum, kind, cmap, title)
     else:
         raise ValueError('`plt_library` must be "toyplot" or "matplotlib".')
+
+class TvTi:
+    def __init__(
+        self,
+        labels,
+        spectrums,
+        colors=None,
+        bar_width=0.925,
+        TiTv=None,
+        a_priori=None,
+        cluster=True,
+        optimal_order=False,
+        figsize=(10, 7),
+        dpi=180,
+        gridspec_kw={},
+        linkage_kw={},
+        dendrogram_kw={},
+        **kwargs
+    ):
+    
+        import matplotlib.pyplot as plt
+        from nucleic import Snv
+        from nucleic.distance import hierarchy_cluster
+        def ticks_off(ax, which='both'):
+            assert which in ('x', 'y', 'both'), 'Which must be `x`, `y`, or `both`.'
+            axis = ('x', 'y') if which == 'both' else (which, )
+
+            for axe in axis:
+                for tic in getattr(ax, f'{axe}axis').get_major_ticks():
+                    tic.tick1On = tic.tick2On = False
+
+            return ax
+        def axis_off(ax, which='x'):
+            """Turn off a specific axis in an ``ax``."""
+            getattr(ax, f'get_{which}axis')().set_visible(False)
+            return ax
+        def despine(ax, top=True, left=True, bottom=True, right=True):
+            """Selectively remove spines from an ``ax``."""
+            for spine, on in zip(
+                ('top', 'left', 'bottom', 'right'), (top, left, bottom, right)
+            ):
+                ax.spines[spine].set_visible(not on)
+            return ax
+        self.spectrums = spectrums
+        self.labels = labels
+        nrows = ncols = 1
+        height_ratios, width_ratios = [1], [1]
+
+        height_ratios = gridspec_kw.pop('height_ratios', height_ratios)
+        width_ratios = gridspec_kw.pop('width_ratios', width_ratios)
+        wspace = gridspec_kw.pop('wspace', 0.07)
+        hspace = gridspec_kw.pop('hspace', 0.06)
+
+        method = linkage_kw.pop('method', 'ward')
+        metric = linkage_kw.pop('metric', 'cosine')
+        color_threshold = dendrogram_kw.pop('color_threshold', 0)
+
+        above_threshold_color = dendrogram_kw.pop(
+            'above_threshold_color',
+            '0.4')
+
+        colors = palettable.colorbrewer.diverging.Spectral_6.hex_colors[::-1]
+
+        if cluster:
+            nrows += 1
+            height_ratios.append(3)
+
+        if TiTv is not None or a_priori is not None:
+            ncols += 1
+            width_ratios.append(20)
+
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=figsize,
+            dpi=210,
+            gridspec_kw={
+                'height_ratios': height_ratios,
+                'width_ratios': width_ratios,
+                'wspace': wspace,
+                'hspace': hspace})
+
+        if nrows == 1 and ncols == 1:
+            ax_observed = axes
+        elif nrows == 1 and ncols == 2:
+            ax_expected, ax_observed = axes
+            self.ax_expected = ax_expected
+        elif nrows == 2 and ncols == 1:
+            ax_dendrogram, ax_observed = axes
+            self.ax_dendrogram = ax_dendrogram
+        if nrows == 2 and ncols == 2:
+            empty, ax_dendrogram, ax_expected, ax_observed = axes.flatten()
+            self.ax_dendrogram = ax_dendrogram
+            self.ax_expected = ax_expected
+            empty.axis('off')
+
+        self.ax_observed = ax_observed
+
+        if cluster is True:
+            try:
+                from fastcluster import linkage
+            except ImportError:
+                from scipy.cluster.hierarchy import linkage
+
+            from scipy.spatial.distance import pdist
+            from scipy.cluster.hierarchy import dendrogram
+
+            Z = hierarchy_cluster(spectrums)
+
+            self.dend = dendrogram(
+                Z,
+                above_threshold_color=above_threshold_color,
+                color_threshold=color_threshold,
+                ax=ax_dendrogram,
+                **dendrogram_kw)
+
+            self.ax_dendrogram.set_clip_on(False)
+
+            # Redfine order of labels.
+            labels = [labels[int(sample)] for sample in self.dend['ivl']]
+            self.labels = labels
+            spectrums = [spectrums[int(sample)] for sample in self.dend['ivl']]
+            self.spectrums = spectrums
+
+            # Format the dendrogram ax canvas.
+            ax_dendrogram = axis_off(despine(ax_dendrogram), 'x')
+            ax_dendrogram.spines['right'].set_visible(True)
+            ax_dendrogram.yaxis.tick_right()
+
+            for tick in ax_dendrogram.yaxis.get_major_ticks():
+                tick.label.set_fontsize(8)
+
+        substitution_types = spectrums[0].keys()
+
+        bottom = np.repeat(0, len(labels))
+        locations = np.arange(len(labels)) + bar_width / 2
+        import operator
+        for i, (subtype, color) in enumerate(zip(substitution_types, colors)):
+            height = [s.mass()[i] for s in spectrums]
+            ax_observed.bar(
+                x=locations,
+                height=height,
+                bottom=bottom,
+                width=bar_width,
+                label=subtype.label().replace('→', '>'),
+                color=color)
+            bottom = list(map(operator.add, height, bottom))
+
+        ax_observed.set_xticks(locations)
+        ax_observed.set_xticklabels(
+            labels,
+            rotation=90,
+            ha='center',
+            family='monospace')
+
+        ax_observed.set_xlim(0, len(labels) + bar_width - 1)
+        ax_observed.set_ylim(0, 1)
+
+        handles, labels = ax_observed.get_legend_handles_labels()
+        self.ax_observed_legend = ax_observed.legend(
+            handles[::-1],
+            labels[::-1],
+            frameon=False,
+            bbox_to_anchor=(1, 1))
+
+        if TiTv is not None:
+            rates = [TiTv if s in transitions else 1
+                     for s in substitution_types]
+        elif a_priori is not None:
+            rates = [a_priori[subtype] for subtype in substitution_types]
+
+        if TiTv is not None or a_priori is not None:
+            bottom = 0
+            expected = [rate / sum(rates) for rate in rates]
+
+            for tier, color in zip(expected, colors):
+                ax_expected.bar(
+                    x=[0],
+                    height=tier,
+                    bottom=bottom,
+                    width=bar_width,
+                    color=color)
+                bottom = bottom + tier
+                ax_observed.axhline(bottom, linestyle='--', alpha=0.4)
+                ax_expected.axhline(bottom, linestyle='--', alpha=0.4)
+
+            ax_expected.set_xticks([0])
+            ax_expected.set_xticklabels(['Expected'])
+            ax_expected.set_xlim(0 - bar_width / 2, 0 + bar_width / 2)
+            ax_expected.set_ylim(0, 1)
+
+            ticks_off(ax_expected, axis='y')
+
+            ax_observed.set_ylabel('')
+            ax_observed.set_yticklabels([])
+
+        self.fig = fig
+        self.axes = axes

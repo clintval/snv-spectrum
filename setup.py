@@ -30,19 +30,20 @@ setuptools.setup(
     license='MIT',
     packages=setuptools.find_packages(where='./'),
     install_requires=[
+        'attrs',
         'fastcluster',
         'nimfa',
         'matplotlib',
         'numpy',
         'ordered-set',
         'palettable',
-        'polo',
         'pyfaidx',
         # TODO: In skbio>0.5.0, NumPy is a build dependency
         'scikit-bio>=0.4.0,<=0.5.0',
         'scipy>=1.0.0',
         'toyplot',
     ],
+    extras_requires={'gff': ['bcbio-gff', 'biopython']},
     keywords='signature mutation transition transversion spectra bioinformatics',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

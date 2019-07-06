@@ -1,6 +1,6 @@
 import pytest
 
-from nucleic import Dna, Variant, SnvSpectrum
+from nucleic import Dna, Variant, Snv, SnvSpectrum
 
 from hypothesis import given
 from hypothesis.strategies import sampled_from
@@ -34,8 +34,8 @@ class TestDna(object):
     def test_nt_to(self, left, right):
         if left == right:
             return
-        assert left.to(right) == Variant(left, right)
-        assert left.to(str(right)) == Variant(left, right)
+        assert left.to(right) == Snv(left, right)
+        assert left.to(str(right)) == Snv(left, right)
 
     @pytest.mark.parametrize('nt', PURINES + PYRIMIDINES)
     def test_nt__repr__(self, nt):
@@ -52,9 +52,9 @@ class TestVariant(object):
     @pytest.mark.parametrize(
         'snv,color_default,color_stratton',
         [
-            [Variant(Dna('A'), Dna('C')), '#D53E4F', '#EDBFC2'],
-            [Variant(Dna('T'), Dna('G')), '#D53E4F', '#EDBFC2'],
-            [Variant(Dna('C'), Dna('A')), '#3288BD', '#52C3F1'],
+            [Snv(Dna('A'), Dna('C')), '#D53E4F', '#EDBFC2'],
+            [Snv(Dna('T'), Dna('G')), '#D53E4F', '#EDBFC2'],
+            [Snv(Dna('C'), Dna('A')), '#3288BD', '#52C3F1'],
         ],
     )
     def test_snv_color_spot_check(self, snv, color_default, color_stratton):
@@ -111,7 +111,7 @@ class TestVariant(object):
         if left == right:
             return
         context = Dna(lseq + str(left) + rseq)
-        snv = Variant(left, right).within(context)
+        snv = Snv(left, right).within(context)
         assert snv.lseq() == Dna(lseq)
         assert snv.rseq() == Dna(rseq)
 
@@ -180,10 +180,10 @@ class TestVariant(object):
         snv = left.to(right)
         assert snv.with_pyrimidine_ref() == snv
 
-    @pytest.mark.parametrize('lseq,rseq,length', [['', '', 1], ['A', 'A', 3], ['AA', 'AA', 5]])
+    @pytest.mark.parametrize('lseq,rseq,length', [['', '', 1], ['A', 'A', 1], ['AA', 'AA', 1]])
     def test_snv__len__(self, lseq, rseq, length):
         snv = Dna('C').to('A').within(Dna(lseq + 'C' + rseq))
-        assert len(snv) == length
+        assert len(snv) == 1
 
     @pytest.mark.parametrize(
         'left,right,context,expected',
@@ -196,6 +196,4 @@ class TestVariant(object):
     @pytest.mark.parametrize('left,right', [[Dna('T'), Dna('A')], [Dna('C'), Dna('G')]])
     def test_snv__repr__(self, left, right):
         snv = left.to(right)
-        assert (
-            snv.__repr__() == f'Variant(ref={repr(left)}, alt={repr(right)}, context={repr(left)})'
-        )
+        assert snv.__repr__() == f'Snv(ref={repr(left)}, alt={repr(right)}, context={repr(left)})'
